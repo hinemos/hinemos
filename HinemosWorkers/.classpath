@@ -68,14 +68,57 @@
 	<classpathentry kind="lib" path="commonlib/swagger-annotations-1.6.2.jar" sourcepath="/HinemosCommon/commonlib/swagger-annotations-1.6.2-sources.jar"/>
 	<classpathentry kind="lib" path="commonlib/threetenbp-1.5.0.jar" sourcepath="/HinemosCommon/commonlib/threetenbp-1.5.0-sources.jar"/>
 	<classpathentry kind="lib" path="lib/openapi-java-client-sdml.jar" sourcepath="lib/openapi-java-client-sdml-sources.jar"/>
-	<classpathentry kind="lib" path="lib/aws-java-sdk-core-1.11.996.jar"/>
-	<classpathentry kind="lib" path="lib/aws-java-sdk-logs-1.11.996.jar"/>
-	<classpathentry kind="lib" path="lib/aws-java-sdk-sts-1.11.996.jar"/>
 	<classpathentry kind="lib" path="commonlib/httpclient-4.5.13.jar"/>
 	<classpathentry kind="lib" path="lib/ion-java-1.5.1.jar"/>
 	<classpathentry kind="lib" path="lib/jackson-dataformat-cbor-2.15.1.jar"/>
-	<classpathentry kind="lib" path="commonlib/httpcore-4.4.14.jar"/>
-	<classpathentry kind="lib" path="lib/jmespath-java-1.11.996.jar"/>
 	<classpathentry kind="lib" path="/HinemosCommon/build/jar/HinemosVersion.jar"/>
+	<classpathentry kind="lib" path="lib/cloudwatchlogs-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/sdk-core-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/utils-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/auth-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/regions-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/sts-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/aws-core-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/apache-client-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/retries-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/retries-spi-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/http-auth-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/http-client-spi-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/identity-spi-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/imds-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/annotations-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/aws-json-protocol-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/aws-query-protocol-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/checksums-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/checksums-spi-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/cloudwatch-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/commons-codec-1.17.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-io-2.6-sources.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="lib/endpoints-spi-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/eventstream-1.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/http-auth-aws-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/http-auth-aws-eventstream-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/http-auth-spi-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/httpcore-4.4.16.jar"/>
+	<classpathentry kind="lib" path="lib/iam-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/json-utils-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/metrics-spi-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/netty-buffer-4.1.126.Final.jar"/>
+	<classpathentry kind="lib" path="lib/netty-codec-4.1.126.Final.jar"/>
+	<classpathentry kind="lib" path="lib/netty-codec-http-4.1.126.Final.jar"/>
+	<classpathentry kind="lib" path="lib/netty-codec-http2-4.1.126.Final.jar"/>
+	<classpathentry kind="lib" path="lib/netty-common-4.1.126.Final.jar"/>
+	<classpathentry kind="lib" path="lib/netty-handler-4.1.126.Final.jar"/>
+	<classpathentry kind="lib" path="lib/netty-nio-client-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/netty-resolver-4.1.126.Final.jar"/>
+	<classpathentry kind="lib" path="lib/netty-transport-4.1.126.Final.jar"/>
+	<classpathentry kind="lib" path="lib/netty-transport-classes-epoll-4.1.126.Final.jar"/>
+	<classpathentry kind="lib" path="lib/netty-transport-native-unix-common-4.1.126.Final.jar"/>
+	<classpathentry kind="lib" path="lib/profiles-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/protocol-core-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/reactive-streams-1.0.4.jar"/>
+	<classpathentry kind="lib" path="lib/third-party-jackson-core-2.39.6.jar"/>
+	<classpathentry kind="lib" path="lib/utils-lite-2.39.6.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

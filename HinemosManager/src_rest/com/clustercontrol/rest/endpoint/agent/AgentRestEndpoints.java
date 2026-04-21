@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.ws.rs.Consumes;
@@ -59,6 +60,7 @@ import com.clustercontrol.commons.bean.SettingUpdateInfo;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.InternalIdCommon;
+import com.clustercontrol.commons.util.JpaTransactionCallback;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.custom.bean.CommandExecuteDTO;
 import com.clustercontrol.custom.session.MonitorCustomControllerBean;
@@ -91,6 +93,7 @@ import com.clustercontrol.jobmanagement.bean.RunResultInfo;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.jobmanagement.session.JobRunManagementBean;
 import com.clustercontrol.jobmanagement.util.JobFileCheckDuplicationGuard;
+import com.clustercontrol.jobmanagement.util.SendTopic;
 import com.clustercontrol.logfile.session.MonitorLogfileControllerBean;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
@@ -126,6 +129,9 @@ import com.clustercontrol.rest.endpoint.agent.dto.SetJobStartResponse;
 import com.clustercontrol.rest.endpoint.agent.dto.SettingUpdateInfoResponse;
 import com.clustercontrol.rest.endpoint.agent.dto.TopicInfoResponse;
 import com.clustercontrol.rest.exception.ExceptionBody;
+import com.clustercontrol.rest.session.RestAPIRequestLock;
+import com.clustercontrol.rest.session.RestAPIRequestLock.AlreadyLockedException;
+import com.clustercontrol.rest.session.RestAPIRequestLock.RequestDuplicateException;
 import com.clustercontrol.rest.session.RestControllerBean;
 import com.clustercontrol.rest.util.RestBeanUtil;
 import com.clustercontrol.rest.util.RestObjectMapperWrapper;
@@ -470,57 +476,72 @@ public class AgentRestEndpoints {
 			throws InvalidSetting, InvalidRole, JobInfoNotFound, HinemosUnknown, SessionIdLocked {
 		m_log.debug("setJobResult: Start.");
 
-		// ---- 重複チェック
-		boolean first = new RestControllerBean().registerRestAgentRequest("", "setJobResult");
-		if (!first) {
+		// ロック
+		try (RestAPIRequestLock lock = new RestAPIRequestLock("", "setJobResult")) {
+			// ---- リクエスト解析
+			SetJobResultRequest req = RestObjectMapperWrapper.convertJsonToObject(requestBody,
+					SetJobResultRequest.class);
+			RunResultInfo info = new RunResultInfo();
+			RestBeanUtil.convertBean(req, info);
+			info.setSessionId(sessionId);
+			info.setJobunitId(jobunitId);
+			info.setJobId(jobId);
+			info.setFacilityId(facilityId);
+
+			// ---- 主処理
+			// ログが見にくなるので、短くして、改行を取り除く
+			String command = info.getCommand();
+			int length = 32;
+			if (command != null) {
+				if (length < command.length()) {
+					command = command.substring(0, length);
+				}
+				command = command.replaceAll("\n", "");
+			}
+
+			RunOutputResultInfo outputInfo = new RunOutputResultInfo();
+			if (req.getJobOutput() != null) {
+				RestBeanUtil.convertBean(req.getJobOutput(), outputInfo);
+			}
+
+			m_log.info("setJobResult : " + info.getSessionId() + ", " + info.getJobunitId() + ", " + info.getJobId()
+					+ ", " + info.getCommandType() + ", " + command + ", " + info.getStatus() + ", "
+					+ info.getFacilityId() + ", " + info.getEndValue());
+
+			try {
+				new JobRunManagementBean().checkSessionIdLocked(info);
+			} catch (SessionIdLocked e) {
+				// セッション処理中の応答をエージェントに返せなかった場合を想定し、
+				// リクエストIDを削除する
+				new RestControllerBean().deleteRestAgentRequest();
+				throw e;
+			}
+			
+			JpaTransactionCallback callback = new JpaTransactionCallback() {
+				@Override
+				public void preFlush() {}
+				@Override
+				public void postFlush() {}
+				@Override
+				public void preCommit() {lock.commitRequestId();}
+				@Override
+				public void postCommit() {}
+				@Override
+				public void preRollback() {}
+				@Override
+				public void postRollback() {}
+				@Override
+				public void preClose() {}
+				@Override
+				public void postClose() {}
+			};
+			
+			new JobRunManagementBean().endNode(info, outputInfo, Optional.of(callback));
+		} catch (AlreadyLockedException e) {
+			throw new HinemosUnknown(e.getMessage(), e);
+		} catch (RequestDuplicateException e) {
 			return Response.status(Status.OK).build();
 		}
-		
-		// ---- リクエスト解析
-		SetJobResultRequest req = RestObjectMapperWrapper.convertJsonToObject(requestBody, SetJobResultRequest.class);
-		RunResultInfo info = new RunResultInfo();
-		RestBeanUtil.convertBean(req, info);
-		info.setSessionId(sessionId);
-		info.setJobunitId(jobunitId);
-		info.setJobId(jobId);
-		info.setFacilityId(facilityId);
-
-		// ---- 主処理
-		// ログが見にくなるので、短くして、改行を取り除く
-		String command = info.getCommand();
-		int length = 32;
-		if (command != null) {
-			if (length < command.length()) {
-				command = command.substring(0, length);
-			}
-			command = command.replaceAll("\n", "");
-		}
-
-		RunOutputResultInfo outputInfo = new RunOutputResultInfo();
-		if (req.getJobOutput() != null) {
-			RestBeanUtil.convertBean(req.getJobOutput(), outputInfo);
-		}
-		
-		m_log.info("setJobResult : " +
-				info.getSessionId() + ", " +
-				info.getJobunitId() + ", " +
-				info.getJobId() + ", " +
-				info.getCommandType() + ", " +
-				command + ", " +
-				info.getStatus() + ", " +
-				info.getFacilityId() + ", " + 
-				info.getEndValue());
-
-		try{
-			new JobRunManagementBean().checkSessionIdLocked(info);
-		} catch(SessionIdLocked e){
-			// セッション処理中の応答をエージェントに返せなかった場合を想定し、
-			// リクエストIDを削除する
-			new RestControllerBean().deleteRestAgentRequest();
-			throw e;
-		}
-		new JobRunManagementBean().endNode(info, outputInfo);
-
 		return Response.status(Status.OK).build();
 	}
 
@@ -750,6 +771,27 @@ public class AgentRestEndpoints {
 				trigger.setTrigger_info(dg.getTriggerInfo());
 				trigger.setFilename(filename);
 				trigger.setDirectory(directory);
+
+				// 実行契機設定存在チェック
+				try {
+					new JobControllerBean().getJobFileCheck(trigger.getJobkickId());
+				} catch (JobMasterNotFound e) {
+					// エージェントとのタイミング問題で稀に発生する可能性がある
+					// ログを出力しエージェントに再送する
+					m_log.warn(String.format(
+							"The agent detected a Job Kick trigger, but the job cannot be executed because the corresponding Job Kick setting does not exist. (JobID=%s, JobKickID=%s, FacilityID=%s)",
+							jobId, trigger.getJobkickId(),
+							String.join(",", AgentConnectUtil.getFacilityIds(agentInfo))));
+					SendTopic.putFileCheck(null);
+					return Response.status(Status.OK).entity(new SetFileCheckResultResponse()).build();
+				} catch (InvalidRole | HinemosUnknown e) {
+					// 通常到達しない
+					m_log.warn("setFileCheckResult : getJobFileCheck failed. " + e.getMessage());
+					String[] args = { jobId, trigger.getTrigger_info() };
+					AplLogger.put(InternalIdCommon.JOB_SYS_017, args);
+					throw new HinemosUnknown(e.getMessage(), e);
+				}
+
 				OutputBasicInfo output = null;
 				for (String facilityId : AgentConnectUtil.getFacilityIds(agentInfo)) {
 					boolean valid = false;

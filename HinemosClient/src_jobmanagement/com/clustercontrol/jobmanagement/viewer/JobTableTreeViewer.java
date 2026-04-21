@@ -10,15 +10,20 @@ package com.clustercontrol.jobmanagement.viewer;
 
 import java.util.ArrayList;
 
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.IBaseLabelProvider;
 import org.eclipse.jface.viewers.IColorProvider;
 import org.eclipse.jface.viewers.IFontProvider;
+import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Item;
@@ -29,6 +34,8 @@ import org.eclipse.swt.widgets.Widget;
 
 import com.clustercontrol.bean.TableColumnInfo;
 import com.clustercontrol.jobmanagement.action.GetJobDetailTableDefine;
+import com.clustercontrol.jobmanagement.composite.DetailComposite.JobDetailViewModel;
+import com.clustercontrol.jobmanagement.composite.DetailComposite.JobElement;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.util.TimeToANYhourConverter;
@@ -36,17 +43,78 @@ import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.WidgetTestUtil;
 import com.clustercontrol.viewer.CommonTableViewerSorter;
 import com.clustercontrol.viewer.ICommonTableLabelProvider;
-//import com.clustercontrol.ClusterControlPlugin;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
- * 共通テーブルビューワークラス<BR>
+ * ジョブ履歴[ジョブ詳細]ビューのジョブ表示用テーブルビューア
+ * DetailCompositeクラスから利用されることを想定
  *
  * @version 1.0.0
  * @since 1.0.0
  */
 public class JobTableTreeViewer extends TreeViewer {
 	private ArrayList<TableColumnInfo> m_tableColumnList = null;
+	
+	// フィルタ条件に一致したジョブのセル背景色の登録キー
+	private static final String COLOR_MATCED = "color_matched";
+	
+	static {
+		// フィルタ条件に一致したジョブのセル背景色を登録
+		JFaceResources.getColorRegistry().put(COLOR_MATCED, new RGB(221, 235, 247));
+	}
+	
+	private static class ContentProvider implements ITreeContentProvider {
+		
+		@Override
+		public Object getParent(Object element) {
+			if (element instanceof JobElement) {
+				return ((JobElement) element).getParent();
+			}
+			return null;
+		}
 
+		@SuppressFBWarnings(
+			value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
+			justification = "The caller tolerates null here, and keeping the current contract avoids changing existing content provider behavior."
+		)
+		@Override
+		public Object[] getElements(Object inputElement) {
+			if (inputElement instanceof JobDetailViewModel) {
+				return ((JobDetailViewModel)inputElement).getJobElements().toArray(new JobElement[0]);
+			}
+			return null;
+		}
+
+		@SuppressFBWarnings(
+			value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
+			justification = "The caller tolerates null here, and keeping the current contract avoids changing existing content provider behavior."
+		)
+		@Override
+		public Object[] getChildren(Object parentElement) {
+			if (parentElement instanceof JobElement) {
+				return ((JobElement)parentElement).getChildren().toArray(new JobElement[0]);
+			}
+			return null;
+		}
+
+		@Override
+		public boolean hasChildren(Object element) {
+			if (element instanceof JobElement) {
+				return !((JobElement)element).getChildren().isEmpty();
+			}
+			return false;
+		}
+
+		@Override
+		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+		}
+
+		@Override
+		public void dispose() {
+		}
+	}
+	
 	/**
 	 * コンストラクタ
 	 *
@@ -56,7 +124,8 @@ public class JobTableTreeViewer extends TreeViewer {
 	public JobTableTreeViewer(Composite parent) {
 		super(parent);
 		setLabelProvider(new JobTableTreeLabelProvider(this));
-		setContentProvider(new JobTableTreeContentProvider());
+		setContentProvider(new ContentProvider());
+		setupTree();
 	}
 
 	/**
@@ -69,7 +138,8 @@ public class JobTableTreeViewer extends TreeViewer {
 	public JobTableTreeViewer(Composite parent, int style) {
 		super(parent, style);
 		setLabelProvider(new JobTableTreeLabelProvider(this));
-		setContentProvider(new JobTableTreeContentProvider());
+		setContentProvider(new ContentProvider());
+		setupTree();
 	}
 
 	/**
@@ -81,9 +151,29 @@ public class JobTableTreeViewer extends TreeViewer {
 	public JobTableTreeViewer(Tree tree) {
 		super(tree);
 		setLabelProvider(new JobTableTreeLabelProvider(this));
-		setContentProvider(new JobTableTreeContentProvider());
+		setContentProvider(new ContentProvider());
+		setupTree();
 	}
-
+	
+	@SuppressFBWarnings(
+		value = "SIC_INNER_SHOULD_BE_STATIC_ANON",
+		justification = "The anonymous SWT selection listener is kept inline for readability and is only used during viewer initialization."
+	)
+	private void setupTree() {
+		getTree().addSelectionListener(
+			new SelectionListener() {
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					TreeItem ti = (TreeItem)e.item;
+					JobElement je = (JobElement)ti.getData();
+					je.setSelected(ti.getChecked());
+				}
+				@Override
+				public void widgetDefaultSelected(SelectionEvent e) {
+				}
+			});
+	}
+	
 	/**
 	 * テーブルカラムの作成処理
 	 *
@@ -141,6 +231,23 @@ public class JobTableTreeViewer extends TreeViewer {
 	 */
 	@Override
 	protected void doUpdateItem(Item item, Object element) {
+		// 更新対象のItemが、フィルターにマッチしているならセルの背景色をマッチ色に変更
+		if (element instanceof JobElement) {
+			JobElement je = (JobElement)element;
+			
+			TreeItem ti = (TreeItem)item;
+			
+			ti.setChecked(je.isSelected());
+			
+			if (je.isMatched()) {
+				ti.setBackground(0, JFaceResources.getColorRegistry().get(COLOR_MATCED));
+			} else {
+				ti.setBackground(0, null);
+			}
+			
+			element = je.getItem();
+		}
+		
 		// update icon and label
 		// Similar code in TableTreeViewer.doUpdateItem()
 		IBaseLabelProvider prov = getLabelProvider();
@@ -223,7 +330,7 @@ public class JobTableTreeViewer extends TreeViewer {
 	private Object getValue(JobTreeItemWrapper item, int columnIndex) {
 		Object value = null;
 		if (columnIndex == GetJobDetailTableDefine.TREE) {
-			value = "";
+			value = item.getData();
 		} else if (columnIndex == GetJobDetailTableDefine.STATUS) {
 			value = item.getDetail().getStatus();
 		} else if (columnIndex == GetJobDetailTableDefine.END_STATUS) {

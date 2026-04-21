@@ -162,7 +162,11 @@
 					<timeSeriesPlot isShowShapes="false">
 						<plot/>
 						<timeAxisFormat>
-							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="7"/>
+								</tickLabelFont>
+							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.1}]]></valueAxisLabelExpression>
 						<valueAxisFormat>
@@ -253,7 +257,11 @@
 					<timeSeriesPlot isShowShapes="false">
 						<plot/>
 						<timeAxisFormat>
-							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="7"/>
+								</tickLabelFont>
+							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.2}]]></valueAxisLabelExpression>
 						<valueAxisFormat>
@@ -344,7 +352,11 @@
 					<timeSeriesPlot isShowShapes="false">
 						<plot/>
 						<timeAxisFormat>
-							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="7"/>
+								</tickLabelFont>
+							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.3}]]></valueAxisLabelExpression>
 						<valueAxisFormat>
@@ -506,7 +518,11 @@
 					<timeSeriesPlot isShowShapes="false">
 						<plot/>
 						<timeAxisFormat>
-							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="7"/>
+								</tickLabelFont>
+							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.4}]]></valueAxisLabelExpression>
 						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
@@ -596,7 +612,11 @@
 					<timeSeriesPlot isShowShapes="false">
 						<plot/>
 						<timeAxisFormat>
-							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="7"/>
+								</tickLabelFont>
+							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.5}]]></valueAxisLabelExpression>
 						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
@@ -685,7 +705,11 @@
 					<timeSeriesPlot isShowShapes="false">
 						<plot/>
 						<timeAxisFormat>
-							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="7"/>
+								</tickLabelFont>
+							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.6}]]></valueAxisLabelExpression>
 						<valueAxisFormat>
@@ -822,7 +846,11 @@
 					<timeSeriesPlot isShowShapes="false">
 						<plot/>
 						<timeAxisFormat>
-							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="7"/>
+								</tickLabelFont>
+							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.7}]]></valueAxisLabelExpression>
 						<valueAxisFormat>

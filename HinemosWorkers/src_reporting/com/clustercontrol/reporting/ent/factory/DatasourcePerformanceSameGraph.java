@@ -333,9 +333,9 @@ public class DatasourcePerformanceSameGraph extends DatasourceSamePattern {
 					} else {
 						result[6] = value.toString();
 					}
-					if (this.maxval < Double.valueOf(result[6])) {
-						this.maxval = Double.valueOf(result[6])+1;
-					} else if (this.minval > Double.valueOf(result[6])) {
+					if (this.maxval < Double.parseDouble(result[6])) {
+						this.maxval = Double.parseDouble(result[6])+1;
+					} else if (this.minval > Double.parseDouble(result[6])) {
 						this.minval = Double.valueOf(result[6]);
 					}
 					itemDataMap.get(itemCode).add(result);
@@ -401,9 +401,9 @@ public class DatasourcePerformanceSameGraph extends DatasourceSamePattern {
 					} else {
 						result[6] = value.toString();
 					}
-					if (this.maxval < Double.valueOf(result[6])) {
-						this.maxval = Double.valueOf(result[6])+1;
-					} else if (this.minval > Double.valueOf(result[6])) {
+					if (this.maxval < Double.parseDouble(result[6])) {
+						this.maxval = Double.parseDouble(result[6])+1;
+					} else if (this.minval > Double.parseDouble(result[6])) {
 						this.minval = Double.valueOf(result[6]);
 					}
 					itemDataMap.get(itemCode).add(result);
@@ -469,9 +469,9 @@ public class DatasourcePerformanceSameGraph extends DatasourceSamePattern {
 					} else {
 						result[6] = value.toString();
 					}
-					if (this.maxval < Double.valueOf(result[6])) {
-						this.maxval = Double.valueOf(result[6])+1;
-					} else if (this.minval > Double.valueOf(result[6])) {
+					if (this.maxval < Double.parseDouble(result[6])) {
+						this.maxval = Double.parseDouble(result[6])+1;
+					} else if (this.minval > Double.parseDouble(result[6])) {
 						this.minval = Double.valueOf(result[6]);
 					}
 					itemDataMap.get(itemCode).add(result);
@@ -537,9 +537,9 @@ public class DatasourcePerformanceSameGraph extends DatasourceSamePattern {
 					} else {
 						result[6] = value.toString();
 					}
-					if (this.maxval < Double.valueOf(result[6])) {
-						this.maxval = Double.valueOf(result[6])+1;
-					} else if (this.minval > Double.valueOf(result[6])) {
+					if (this.maxval < Double.parseDouble(result[6])) {
+						this.maxval = Double.parseDouble(result[6])+1;
+					} else if (this.minval > Double.parseDouble(result[6])) {
 						this.minval = Double.valueOf(result[6]);
 					}
 					itemDataMap.get(itemCode).add(result);
@@ -677,7 +677,7 @@ public class DatasourcePerformanceSameGraph extends DatasourceSamePattern {
 										}
 
 										if (deltaTime == 0 || (deltaTime > -addTime && deltaTime <= addTime)) {
-											double val = Double.valueOf(newLine[6])+Double.valueOf(conLine[6]);
+											double val = Double.parseDouble(newLine[6])+Double.parseDouble(conLine[6]);
 											newLine[6] = String.valueOf(val);
 											pointer += lines.indexOf(conLine) +1;
 											listPointMap.put(data.getKey(), pointer);

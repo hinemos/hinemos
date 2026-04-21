@@ -237,6 +237,7 @@ public class ControlNodeComposite extends Composite {
 						(m_jobType == JobInfoWrapper.TypeEnum.JOB || m_jobType == JobInfoWrapper.TypeEnum.FILECHECKJOB
 						|| m_jobType == JobInfoWrapper.TypeEnum.RPAJOB) 
 						&& check.getSelection());
+				m_messageRetry.setEditable(check.getSelection());
 				update();
 			}
 
@@ -261,7 +262,7 @@ public class ControlNodeComposite extends Composite {
 		WidgetTestUtil.setTestId(this, "m_messageRetry", this.m_messageRetry);
 		this.m_messageRetry.setLayoutData(new RowData(100, SizeConstant.SIZE_TEXT_HEIGHT));
 		this.m_messageRetry.addVerifyListener(
-				new PositiveNumberVerifyListener(1, DataRangeConstant.SMALLINT_HIGH));
+				new PositiveNumberVerifyListener(0, DataRangeConstant.SMALLINT_HIGH));
 		this.m_messageRetry.addModifyListener(
 				new ModifyListener(){
 					@Override
@@ -402,7 +403,7 @@ public class ControlNodeComposite extends Composite {
 		}else{
 			this.m_messageRetryEndValue.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
-		if("".equals(this.m_messageRetry.getText())){
+		if (m_messageRetryEndCondition.getSelection() && "".equals(this.m_messageRetry.getText())) {
 			this.m_messageRetry.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
 		}else{
 			this.m_messageRetry.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
@@ -686,11 +687,15 @@ public class ControlNodeComposite extends Composite {
 			if (m_messageRetry.getText().length() > 0) {
 				m_jobCommand.setMessageRetry(Integer.parseInt(m_messageRetry.getText()));
 			} else {
-				result = new ValidateResult();
-				result.setValid(false);
-				result.setID(Messages.getString("message.hinemos.1"));
-				result.setMessage(Messages.getString("message.job.87"));
-				return result;
+				if (m_messageRetryEndCondition.getSelection()) {
+					result = new ValidateResult();
+					result.setValid(false);
+					result.setID(Messages.getString("message.hinemos.1"));
+					result.setMessage(Messages.getString("message.job.87"));
+					return result;
+				} else {
+					m_jobCommand.setMessageRetry(10);
+				}
 			}
 		} catch(NumberFormatException e) {
 			result = new ValidateResult();
@@ -709,11 +714,15 @@ public class ControlNodeComposite extends Composite {
 				m_jobCommand.setMessageRetryEndValue(Integer.parseInt(m_messageRetryEndValue
 						.getText()));
 			} else {
-				result = new ValidateResult();
-				result.setValid(false);
-				result.setID(Messages.getString("message.hinemos.1"));
-				result.setMessage(Messages.getString("message.job.21"));
-				return result;
+				if (m_messageRetryEndCondition.getSelection()) {
+					result = new ValidateResult();
+					result.setValid(false);
+					result.setID(Messages.getString("message.hinemos.1"));
+					result.setMessage(Messages.getString("message.job.21"));
+					return result;
+				} else {
+					m_jobCommand.setMessageRetryEndValue(-1);
+				}
 			}
 		} catch (NumberFormatException e) {
 			if (m_jobCommand.getMessageRetryEndFlg().booleanValue()) {
@@ -736,11 +745,15 @@ public class ControlNodeComposite extends Composite {
 					m_jobCommand.setCommandRetryEndStatus(JobCommandInfoResponse.CommandRetryEndStatusEnum.fromValue(enumValue));
 				}
 			} else {
-				result = new ValidateResult();
-				result.setValid(false);
-				result.setID(Messages.getString("message.hinemos.1"));
-				result.setMessage(Messages.getString("message.job.167"));
-				return result;
+				if (m_commandRetryCondition.getSelection()) {
+					result = new ValidateResult();
+					result.setValid(false);
+					result.setID(Messages.getString("message.hinemos.1"));
+					result.setMessage(Messages.getString("message.job.167"));
+					return result;
+				} else {
+					m_jobCommand.setCommandRetry(10);
+				}
 			}
 		} catch(NumberFormatException e) {
 			result = new ValidateResult();
@@ -775,11 +788,15 @@ public class ControlNodeComposite extends Composite {
 			if (m_messageRetry.getText().length() > 0) {
 				m_jobFile.setMessageRetry(Integer.parseInt(m_messageRetry.getText()));
 			} else {
-				result = new ValidateResult();
-				result.setValid(false);
-				result.setID(Messages.getString("message.hinemos.1"));
-				result.setMessage(Messages.getString("message.job.87"));
-				return result;
+				if (m_messageRetryEndCondition.getSelection()) {
+					result = new ValidateResult();
+					result.setValid(false);
+					result.setID(Messages.getString("message.hinemos.1"));
+					result.setMessage(Messages.getString("message.job.87"));
+					return result;
+				} else {
+					m_jobFile.setMessageRetry(10);
+				}
 			}
 		} catch(NumberFormatException e) {
 			result = new ValidateResult();
@@ -798,11 +815,15 @@ public class ControlNodeComposite extends Composite {
 				m_jobFile.setMessageRetryEndValue(Integer.parseInt(m_messageRetryEndValue
 						.getText()));
 			} else {
-				result = new ValidateResult();
-				result.setValid(false);
-				result.setID(Messages.getString("message.hinemos.1"));
-				result.setMessage(Messages.getString("message.job.21"));
-				return result;
+				if (m_messageRetryEndCondition.getSelection()) {
+					result = new ValidateResult();
+					result.setValid(false);
+					result.setID(Messages.getString("message.hinemos.1"));
+					result.setMessage(Messages.getString("message.job.21"));
+					return result;
+				} else {
+					m_jobFile.setMessageRetryEndValue(-1);
+				}
 			}
 		} catch (NumberFormatException e) {
 			if (m_jobFile.getMessageRetryEndFlg().booleanValue()) {
@@ -835,11 +856,15 @@ public class ControlNodeComposite extends Composite {
 			if (m_messageRetry.getText().length() > 0) {
 				m_jobFileCheck.setMessageRetry(Integer.parseInt(m_messageRetry.getText()));
 			} else {
-				result = new ValidateResult();
-				result.setValid(false);
-				result.setID(Messages.getString("message.hinemos.1"));
-				result.setMessage(Messages.getString("message.job.87"));
-				return result;
+				if (m_messageRetryEndCondition.getSelection()) {
+					result = new ValidateResult();
+					result.setValid(false);
+					result.setID(Messages.getString("message.hinemos.1"));
+					result.setMessage(Messages.getString("message.job.87"));
+					return result;
+				} else {
+					m_jobFileCheck.setMessageRetry(10);
+				}
 			}
 		} catch(NumberFormatException e) {
 			result = new ValidateResult();
@@ -858,11 +883,15 @@ public class ControlNodeComposite extends Composite {
 				m_jobFileCheck.setMessageRetryEndValue(Integer.parseInt(m_messageRetryEndValue
 						.getText()));
 			} else {
-				result = new ValidateResult();
-				result.setValid(false);
-				result.setID(Messages.getString("message.hinemos.1"));
-				result.setMessage(Messages.getString("message.job.21"));
-				return result;
+				if (m_messageRetryEndCondition.getSelection()) {
+					result = new ValidateResult();
+					result.setValid(false);
+					result.setID(Messages.getString("message.hinemos.1"));
+					result.setMessage(Messages.getString("message.job.21"));
+					return result;
+				} else {
+					m_jobFileCheck.setMessageRetryEndValue(-1);
+				}
 			}
 		} catch (NumberFormatException e) {
 			if (m_jobFileCheck.getMessageRetryEndFlg().booleanValue()) {
@@ -895,11 +924,15 @@ public class ControlNodeComposite extends Composite {
 			if (m_messageRetry.getText().length() > 0) {
 				m_jobRpa.setMessageRetry(Integer.parseInt(m_messageRetry.getText()));
 			} else {
-				result = new ValidateResult();
-				result.setValid(false);
-				result.setID(Messages.getString("message.hinemos.1"));
-				result.setMessage(Messages.getString("message.job.87"));
-				return result;
+				if (m_messageRetryEndCondition.getSelection()) {
+					result = new ValidateResult();
+					result.setValid(false);
+					result.setID(Messages.getString("message.hinemos.1"));
+					result.setMessage(Messages.getString("message.job.87"));
+					return result;
+				} else {
+					m_jobRpa.setMessageRetry(10);
+				}
 			}
 		} catch(NumberFormatException e) {
 			result = new ValidateResult();
@@ -918,11 +951,15 @@ public class ControlNodeComposite extends Composite {
 				m_jobRpa.setMessageRetryEndValue(Integer.parseInt(m_messageRetryEndValue
 						.getText()));
 			} else {
-				result = new ValidateResult();
-				result.setValid(false);
-				result.setID(Messages.getString("message.hinemos.1"));
-				result.setMessage(Messages.getString("message.job.21"));
-				return result;
+				if (m_messageRetryEndCondition.getSelection()) {
+					result = new ValidateResult();
+					result.setValid(false);
+					result.setID(Messages.getString("message.hinemos.1"));
+					result.setMessage(Messages.getString("message.job.21"));
+					return result;
+				} else {
+					m_jobRpa.setMessageRetryEndValue(-1);
+				}
 			}
 		} catch (NumberFormatException e) {
 			if (m_jobRpa.getMessageRetryEndFlg().booleanValue()) {
@@ -1006,7 +1043,7 @@ public class ControlNodeComposite extends Composite {
 		m_endCondition.setEnabled(enabled);
 		m_endValue.setEditable(m_endCondition.getSelection() && enabled);
 		m_messageRetryEndCondition.setEnabled(enabled);
-		m_messageRetry.setEditable(enabled);
+		m_messageRetry.setEditable(m_messageRetryEndCondition.getSelection() && enabled);
 		m_messageRetryEndValue.setEditable(
 				(m_jobType == JobInfoWrapper.TypeEnum.JOB || m_jobType == JobInfoWrapper.TypeEnum.FILECHECKJOB || m_jobType == JobInfoWrapper.TypeEnum.RPAJOB)
 						&& m_messageRetryEndCondition.getSelection() && enabled);

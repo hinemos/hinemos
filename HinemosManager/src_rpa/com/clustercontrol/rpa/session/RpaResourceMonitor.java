@@ -126,6 +126,9 @@ public class RpaResourceMonitor {
 					RepositoryUpdater updater = new RepositoryUpdater(); 
 					updater.update(account);
 				} catch (Exception e) {
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("internalResourceUpdate() update failed. " + e.getMessage(), e);
+					}
 					notifyFailedUpdate(account.getRpaScopeId());
 				}  finally {
 					detecting.remove(account.getRpaScopeId());
@@ -195,4 +198,4 @@ public class RpaResourceMonitor {
 	private static void notifyFailedUpdate(String rpaScopeId) {
 		AplLogger.put(InternalIdCommon.RPA_SYS_004, PriorityConstant.TYPE_WARNING, new String[]{rpaScopeId} , MessageConstant.MESSAGE_RPA_AUTO_DETECT_ACCESS_FAILED.getMessage(rpaScopeId));
 	}
-	}
+}

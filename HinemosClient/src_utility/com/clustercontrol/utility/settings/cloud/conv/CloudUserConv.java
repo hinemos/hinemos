@@ -16,6 +16,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -24,6 +26,7 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -62,12 +65,15 @@ import com.clustercontrol.utility.settings.cloud.xml.GoogleUser;
 import com.clustercontrol.utility.settings.cloud.xml.Hyperv;
 import com.clustercontrol.utility.settings.cloud.xml.HypervUser;
 import com.clustercontrol.utility.settings.cloud.xml.ICloudScope;
+import com.clustercontrol.utility.settings.cloud.xml.Kvm;
+import com.clustercontrol.utility.settings.cloud.xml.KvmUser;
 import com.clustercontrol.utility.settings.cloud.xml.Oracle;
 import com.clustercontrol.utility.settings.cloud.xml.OracleUser;
 import com.clustercontrol.utility.settings.cloud.xml.Vmware;
 import com.clustercontrol.utility.settings.cloud.xml.VmwareUser;
 import com.clustercontrol.utility.settings.model.BaseConv;
 import com.clustercontrol.utility.settings.ui.util.BackupUtil;
+import com.clustercontrol.utility.util.DateUtil;
 import com.clustercontrol.utility.util.MultiManagerPathUtil;
 import com.clustercontrol.utility.util.UtilityManagerUtil;
 import com.clustercontrol.version.util.VersionUtil;
@@ -164,6 +170,16 @@ public class CloudUserConv {
 		
 		updateKeyProtectedFlag();
 
+		//サブアカウントの取得と優先度順に変更
+		List<ILoginUser> subUserList = new ArrayList<>(Arrays.asList(cloudScopeEndpoint.getLoginUsers().getLoginUsers()));
+		subUserList.remove(cloudScopeEndpoint.getLoginUsers().getLoginUser(cloudScopeEndpoint.getAccountId()));
+		Collections.sort(subUserList, new java.util.Comparator<ILoginUser>() {
+			@Override
+			public int compare(ILoginUser o1, ILoginUser o2) {
+				return o1.getPriority().compareTo(o2.getPriority());
+			}
+		});
+
 		if (cloudScopeEndpoint.getPlatformId().equals(CloudConstant.platform_ESXi) ||
 				cloudScopeEndpoint.getPlatformId().equals(CloudConstant.platform_vCenter)) {
 			URL url=null;
@@ -185,10 +201,8 @@ public class CloudUserConv {
 				vmware.addVmwareUser(hideProtectedKey(vmwareUser));
 				cloudScope.setVmware(vmware);
 				
-				List<ILoginUser> currentUsers = new ArrayList<>(Arrays.asList(cloudScopeEndpoint.getLoginUsers().getLoginUsers()));
-				currentUsers.remove(cloudScopeEndpoint.getLoginUsers().getLoginUser(cloudScopeEndpoint.getAccountId()));
-				
-				for (ILoginUser user : currentUsers){
+				for (ILoginUser user : subUserList){
+					// サブユーザ
 					vmwareUser = new VmwareUser();
 					vmwareUser.setVmwareUserName(((CredentialResponse)user.getCredential()).getUser());
 					vmwareUser.setVmwarePassword(((CredentialResponse)user.getCredential()).getPassword());
@@ -212,9 +226,7 @@ public class CloudUserConv {
 			amazonUser.setDisplayName(accountUser.getName());
 			amazon.addAmazonUser(hideProtectedKey(amazonUser));
 			
-			List<ILoginUser> currentUsers = new ArrayList<>(Arrays.asList(cloudScopeEndpoint.getLoginUsers().getLoginUsers()));
-			currentUsers.remove(cloudScopeEndpoint.getLoginUsers().getLoginUser(cloudScopeEndpoint.getAccountId()));
-			for (ILoginUser iLoginUser :currentUsers ){
+			for (ILoginUser iLoginUser : subUserList ){
 				amazonUser = new AmazonUser();
 				
 				// サブユーザ
@@ -246,10 +258,8 @@ public class CloudUserConv {
 			rootUser.setDisplayName(accountUser.getName());
 			hyperv.addHypervUser(hideProtectedKey(rootUser));
 			
-			for (ILoginUser user : cloudScopeEndpoint.getLoginUsers().getLoginUsers()){
-				if (user.getId().equals(accountUser.getId()))
-					continue;
-				
+			for (ILoginUser user : subUserList){
+				// サブユーザ
 				HypervUser subUser = new HypervUser();
 				subUser.setUserName(((CredentialResponse)user.getCredential()).getUser());
 				subUser.setPassword(((CredentialResponse)user.getCredential()).getPassword());
@@ -281,10 +291,7 @@ public class CloudUserConv {
 			rootUser.setDisplayName(accountUser.getName());
 			azure.addAzureUser(hideProtectedKey(rootUser));
 			
-			for (ILoginUser user : cloudScopeEndpoint.getLoginUsers().getLoginUsers()) {
-				if (user.getId().equals(accountUser.getId()))
-					continue;
-				
+			for (ILoginUser user : subUserList) {
 				// サブユーザ
 				AzureUser subUser = new AzureUser();
 				String[] subIds = ((CredentialResponse) user.getCredential()).getAccessKey().split(CloudConstant.azureKeySep);
@@ -305,7 +312,8 @@ public class CloudUserConv {
 				azure.setTerm(0);
 			}
 			if (cloudScopeEndpoint.getExtendedProperty(CloudConstant.eprop_azureBeginDate) != null) {
-				azure.setBeginDate(cloudScopeEndpoint.getExtendedProperty(CloudConstant.eprop_azureBeginDate).replace("-", "/"));
+				azure.setBeginDate(DateUtil.convertDateZeroPadding(
+						cloudScopeEndpoint.getExtendedProperty(CloudConstant.eprop_azureBeginDate).replace("-", "/")));
 			} else {
 				azure.setBeginDate(null); // nullを設定した場合要素が出力されない
 			}
@@ -322,10 +330,7 @@ public class CloudUserConv {
 			convertJSONObjectToGoogleUserObj(accountUser, googleUser);
 			google.addGoogleUser(hideProtectedKey(googleUser));
 
-			List<ILoginUser> currentUsers = new ArrayList<>(
-					Arrays.asList(cloudScopeEndpoint.getLoginUsers().getLoginUsers()));
-			currentUsers.remove(cloudScopeEndpoint.getLoginUsers().getLoginUser(cloudScopeEndpoint.getAccountId()));
-			for (ILoginUser iLoginUser : currentUsers) {
+			for (ILoginUser iLoginUser : subUserList) {
 				googleUser = new GoogleUser();
 
 				// サブユーザ
@@ -354,10 +359,7 @@ public class CloudUserConv {
 			convertJSONObjectToOracleUserObj(accountUser, oracleUser);
 			oracle.addOracleUser(hideProtectedKey(oracleUser));
 
-			List<ILoginUser> currentUsers = new ArrayList<>(
-					Arrays.asList(cloudScopeEndpoint.getLoginUsers().getLoginUsers()));
-			currentUsers.remove(cloudScopeEndpoint.getLoginUsers().getLoginUser(cloudScopeEndpoint.getAccountId()));
-			for (ILoginUser iLoginUser : currentUsers) {
+			for (ILoginUser iLoginUser : subUserList) {
 				oracleUser = new OracleUser();
 
 				// サブユーザ
@@ -378,8 +380,46 @@ public class CloudUserConv {
 			
 			cloudScope.setOracle(oracle);
 
-		}
+		} else if (cloudScopeEndpoint.getPlatformId().equals(CloudConstant.platform_KVM)) {
+			Kvm kvm = new Kvm();
+			KvmUser kvmUser = new KvmUser();
 
+			// メインユーザ
+			convertJSONObjectToKvmUserObj(accountUser, kvmUser);
+			kvm.addKvmUser(hideProtectedKey(kvmUser));
+
+			for (ILoginUser iLoginUser : subUserList){
+				kvmUser = new KvmUser();
+
+				// サブユーザ
+				convertJSONObjectToKvmUserObj(iLoginUser, kvmUser);
+				kvm.addKvmUser(hideProtectedKey(kvmUser));
+			}
+
+			try {
+				// kvmにsetしない要素はXMLファイルに出力されない
+				// ドライバーとトランスポートは固定値のためXMLファイルに出力しない
+				URI uri = new URI(
+						cloudScopeEndpoint.getLocation(cloudScopeEndpoint.getPlatformId()).getEndpoints()[0].getUrl());
+				kvm.setHost(uri.getHost());
+				int port = uri.getPort();
+				if (port != -1) {
+					kvm.setPort(port);
+				}
+				if (uri.getPath().startsWith("/")) {
+					kvm.setMode(uri.getPath().substring(1, uri.getPath().length()));
+				} else {
+					kvm.setMode(uri.getPath());
+				}
+				String quety = uri.getQuery();
+				if (!StringUtils.isEmpty(quety)) {
+					kvm.setExtraParameters(quety);
+				}
+				cloudScope.setKvm(kvm);
+			} catch (URISyntaxException e) {
+				log.error(e);
+			}
+		}
 		cloudScope.setOwnerRoleId(cloudScopeEndpoint.getOwnerRoleId());
 		
 		return cloudScope;
@@ -896,6 +936,14 @@ public class CloudUserConv {
 		return user;
 	}
 
+	private static KvmUser hideProtectedKey(KvmUser user) {
+		if (!keyProtected)
+			return user;
+		if (user.getPassword() != null) { // handle for enable protection function
+			user.setPassword("");
+		}
+		return user;
+	}
 
 	/**
 	 * キー情報保護が有効な場合に、指定されたクラウドスコープXML入出力オブジェクト内の保護対象項目のうち、
@@ -993,6 +1041,29 @@ public class CloudUserConv {
 									&& !serviceAccountJson.get(CloudConstant.privateKeyFileNameConst).asText().isEmpty()) {
 								user.setPrivateKeyFileName(
 										serviceAccountJson.get(CloudConstant.privateKeyFileNameConst).asText());
+							}
+						}
+					}
+				}
+			}
+		} else if (xml.getCloudPlatformId().equals(CloudConstant.platform_KVM)) {
+			// KVM
+			for (KvmUser user : xml.getKvm().getKvmUser()) {
+				if (StringUtils.isEmpty(user.getPassword())) {
+					ILoginUser currUser = model.getLoginUsers().getLoginUser(user.getAccountId());
+					if (currUser != null) {
+						ObjectMapper objMapper = new ObjectMapper();
+						JsonNode serviceAccountJson = null;
+						try {
+							serviceAccountJson = objMapper.readTree(currUser.getCredential().getJsonCredentialInfo());
+						} catch (JsonProcessingException e) {
+							log.warn("Error occurred while parsing json: " + e.getMessage());
+						}
+
+						if (serviceAccountJson != null) {
+							if (serviceAccountJson.get(CloudConstant.Password) != null
+									&& !serviceAccountJson.get(CloudConstant.Password).asText().isEmpty()) {
+								user.setPassword(serviceAccountJson.get(CloudConstant.Password).asText());
 							}
 						}
 					}
@@ -1727,4 +1798,144 @@ public class CloudUserConv {
 		}
 	}
 
+	private static void convertJSONObjectToKvmUserObj(ILoginUser accountUser, KvmUser kvmUser) {
+		ObjectMapper objMapper = new ObjectMapper();
+		JsonNode serviceAccountJson = null;
+		try {
+			serviceAccountJson = objMapper.readTree(accountUser.getCredential().getJsonCredentialInfo());
+
+			if (serviceAccountJson != null) {
+				if (serviceAccountJson.get(CloudConstant.KeyFile) != null
+						&& !serviceAccountJson.get(CloudConstant.KeyFile).asText().isEmpty()) {
+					kvmUser.setKeyFile(serviceAccountJson.get(CloudConstant.KeyFile).asText());
+				}
+				if (serviceAccountJson.get(CloudConstant.Password) != null
+						&& !serviceAccountJson.get(CloudConstant.Password).asText().isEmpty()) {
+					kvmUser.setPassword(serviceAccountJson.get(CloudConstant.Password).asText());
+				}
+				if (serviceAccountJson.get(CloudConstant.UserName) != null
+						&& !serviceAccountJson.get(CloudConstant.UserName).asText().isEmpty()) {
+					kvmUser.setUserName(serviceAccountJson.get(CloudConstant.UserName).asText());
+				}
+			}
+			kvmUser.setAccountId(accountUser.getId());
+			kvmUser.setDisplayName(accountUser.getName());
+			kvmUser.setAccountDesc(accountUser.getDescription());
+		} catch (JsonProcessingException e) {
+			log.warn("Error occurred while parsing json object:" + e.getMessage());
+		}
+	}
+
+	public static AddCloudScopeRequest getKVMCloudScopeRequestDto(ICloudScope cloudScope, String xmlFile)
+			throws InvalidSetting, HinemosUnknown {
+		AddCloudScopeRequest req = new AddCloudScopeRequest();
+		req.setPlatformId(cloudScope.getCloudPlatformId());
+		req.setCloudScopeId(cloudScope.getCloudScopeId());
+		req.setScopeName(cloudScope.getCloudScopeName());
+		req.setOwnerRoleId(cloudScope.getOwnerRoleId());
+		req.setDescription(cloudScope.getDescription());
+
+		// メイン登録
+		if (cloudScope.getKvm() != null && cloudScope.getKvm().getKvmUserCount() > 0) {
+			AddCloudLoginUserRequest account = new AddCloudLoginUserRequest();
+			KvmUser kvmUser = cloudScope.getKvm().getKvmUser(0);
+
+			account.setDescription(kvmUser.getAccountDesc());
+			account.setLoginUserId(kvmUser.getAccountId());
+			account.setUserName(kvmUser.getDisplayName());
+			account.setPlatform(CloudConstant.platform_KVM);
+
+			ObjectMapper objMapper = null;
+			HashMap<String, String> jsonCredentialInfoMap = new HashMap<>();
+			objMapper = new ObjectMapper();
+			jsonCredentialInfoMap.put(CloudConstant.UserName, kvmUser.getUserName());
+			String password = kvmUser.getPassword();
+			if (password != null) {
+				jsonCredentialInfoMap.put(CloudConstant.Password, password);
+			}
+			String keyFile = kvmUser.getKeyFile();
+			if (keyFile != null) {
+				jsonCredentialInfoMap.put(CloudConstant.KeyFile, keyFile);
+			}
+			String jsonCrdentialInfoString = null;
+			try {
+				jsonCrdentialInfoString = objMapper.writeValueAsString(jsonCredentialInfoMap);
+			} catch (JsonProcessingException e) {
+				log.warn("getKVMCloudScopeRequestDto(): failed to read file contents", e);
+				throw new HinemosUnknown(e);
+			}
+			account.setJsonCredentialInfo(jsonCrdentialInfoString);
+			req.setAccount(account);
+		}
+
+		PrivateEndpointRequest endpointReqest = new PrivateEndpointRequest();
+		endpointReqest.setEndpointId(cloudScope.getCloudPlatformId());
+		URI uri = null;
+		Kvm kvm = cloudScope.getKvm();
+		if (kvm != null) {
+			try {
+				uri = new URI("qemu+ssh", null, kvm.getHost(), kvm.getPort(), "/" + kvm.getMode(),
+						kvm.getExtraParameters(), null);
+				endpointReqest.setUrl(uri.toString());
+			} catch (URISyntaxException e) {
+				throw new CloudModelException(e.getMessage(), e);
+			}
+		}
+		PrivateLocationRequest location = new PrivateLocationRequest();
+		location.setLocationId(CloudConstant.location_KVM);
+		location.setName(cloudScope.getCloudPlatformId());
+		location.setEndpoints(new ArrayList<PrivateEndpointRequest>());
+		location.getEndpoints().add(endpointReqest);
+		req.setPrivateLocations(new ArrayList<PrivateLocationRequest>());
+		req.getPrivateLocations().add(location);
+		return req;
+	}
+
+	public static void convertKVMCloudUserRequestDto(ICloudScope info, AddCloudScopeRequest cloudScope,
+			List<AddCloudLoginUserRequest> addRequestList, List<String> idList, String xmlFile)
+			throws InvalidSetting, HinemosUnknown {
+		if (info.getKvm() == null) {
+			return;
+		}
+		List<KvmUser> output = new ArrayList<>(Arrays.asList(info.getKvm().getKvmUser()));
+		int index = 0;
+		for (KvmUser kvmUser : new ArrayList<>(output)) {
+			if (kvmUser.getAccountId().equals(cloudScope.getAccount().getLoginUserId())) {
+				output.remove(index);
+				break;
+			}
+			index++;
+		}
+
+		for (KvmUser item : output) {
+			AddCloudLoginUserRequest request = new AddCloudLoginUserRequest();
+			request.setLoginUserId(item.getAccountId());
+			request.setUserName(item.getDisplayName());
+			request.setPlatform(CloudConstant.platform_KVM);
+			request.setDescription(item.getAccountDesc());
+
+			ObjectMapper objMapper = null;
+			HashMap<String, String> jsonCredentialInfoMap = new HashMap<>();
+			objMapper = new ObjectMapper();
+			jsonCredentialInfoMap.put(CloudConstant.UserName, item.getUserName());
+			String password = item.getPassword();
+			if (password != null) {
+				jsonCredentialInfoMap.put(CloudConstant.Password, password);
+			}
+			String keyFile = item.getKeyFile();
+			if (keyFile != null) {
+				jsonCredentialInfoMap.put(CloudConstant.KeyFile, keyFile);
+			}
+			String jsonCrdentialInfoString = null;
+			try {
+				jsonCrdentialInfoString = objMapper.writeValueAsString(jsonCredentialInfoMap);
+			} catch (JsonProcessingException e) {
+				log.warn("convertKVMCloudUserRequestDto(): failed to read file contents", e);
+				throw new HinemosUnknown(e);
+			}
+			request.setJsonCredentialInfo(jsonCrdentialInfoString);
+			addRequestList.add(request);
+			idList.add(item.getAccountId());
+		}
+	}
 }

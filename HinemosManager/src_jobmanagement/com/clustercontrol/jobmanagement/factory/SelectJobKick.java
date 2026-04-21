@@ -49,6 +49,8 @@ import com.clustercontrol.plugin.model.DbmsSchedulerEntity;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.HinemosTime;
 
+import jakarta.persistence.Query;
+
 /**
  * 
  * 実行契機一覧情報[スケジュール＆ファイルチェック]を検索するクラスです。
@@ -150,6 +152,124 @@ public class SelectJobKick {
 			}
 			return list;
 		}
+	}
+
+	/**
+	 * ジョブ実行契機一覧情報を取得します。(JobKickCache用)
+	 * 
+	 * @return ジョブ実行契機一覧情報
+	 * @throws JobMasterNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	public List<JobKick> getJobKickListForJobKickCache() throws JobMasterNotFound, InvalidRole, HinemosUnknown {
+		m_log.info("getJobKickListForJobKickCache() start.");
+
+		long startTime = 0;
+		if (m_log.isDebugEnabled()) {
+			startTime = System.currentTimeMillis();
+			m_log.debug("getJobKickListForJobKickCache() start. time(ms): start=" + startTime);
+		}
+
+		List<JobKick> list = new ArrayList<JobKick>();
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
+			// 実行契機情報を取得する。
+			// JPQLで実行するとレコード毎にリレーション先のジョブ変数、選択候補のSQLが発行されるため、SQL直書きとする。
+			// ランタイムジョブ変数情報は取得しない。
+			Query q = em.createNativeQuery("SELECT jobkick_type"
+					+ ", jobkick_id"
+					+ ", jobkick_name"
+					+ ", jobunit_id"
+					+ ", job_id"
+					+ ", calendar_id"
+					+ ", facility_id"
+					+ ", directory"
+					+ ", file_name"
+					+ ", event_type"
+					+ ", modify_type"
+					+ ", carry_over_judgement_flg"
+					+ ", valid_flg"
+					+ ", owner_role_id"
+					+ ", reg_date"
+					+ ", update_date"
+					+ ", reg_user"
+					+ ", update_user"
+					+ " FROM setting.cc_job_kick"
+					+ " ORDER BY jobkick_id");
+			@SuppressWarnings("unchecked")
+			List<Object[]> resultList = q.getResultList();
+			for (Object[] objects : resultList) {
+				int idx = 0;
+				Integer jobkickType = null;
+				if (objects[idx] instanceof Integer) {
+					jobkickType = (Integer) objects[idx++];
+				} else {
+					m_log.error("getJobKickListForJobKickCache() : Unexpected class type. idx=" + idx++);
+					continue;
+				}
+
+				if (jobkickType != JobKickConstant.TYPE_FILECHECK) {
+					// ファイルチェック実行契機以外は対象外
+					continue;
+				}
+
+				JobFileCheck jobFileCheck = new JobFileCheck();
+				jobFileCheck.setId((String)objects[idx++]);
+				jobFileCheck.setName((String)objects[idx++]);
+				jobFileCheck.setJobunitId((String)objects[idx++]);
+				jobFileCheck.setJobId((String)objects[idx++]);
+				jobFileCheck.setCalendarId((String)objects[idx++]);
+				jobFileCheck.setFacilityId((String)objects[idx++]);
+				jobFileCheck.setDirectory((String)objects[idx++]);
+				jobFileCheck.setFileName((String)objects[idx++]);
+				jobFileCheck.setEventType((Integer)objects[idx++]);
+				jobFileCheck.setModifyType((Integer)objects[idx++]);
+				jobFileCheck.setCarryOverJudgmentFlg((Boolean)objects[idx++]);
+				jobFileCheck.setValid((Boolean)objects[idx++]);
+				jobFileCheck.setOwnerRoleId((String)objects[idx++]);
+				Object obj = objects[idx++];
+				if (obj != null) {
+					jobFileCheck.setCreateTime((Long)obj);
+				}
+				obj = objects[idx++];
+				if (obj != null) {
+					jobFileCheck.setUpdateTime((Long)obj);
+				}
+				jobFileCheck.setCreateUser((String)objects[idx++]);
+				jobFileCheck.setUpdateUser((String)objects[idx++]);
+
+				//ジョブ名を取得
+				JobMstEntity jobMstEntity = QueryUtil.getJobMstPK_OR(
+						jobFileCheck.getJobunitId(),
+						jobFileCheck.getJobId(),
+						jobFileCheck.getOwnerRoleId());
+				jobFileCheck.setJobName(jobMstEntity.getJobName());
+
+				//ファシリティパス取得
+				String scopePath = new RepositoryControllerBean().getFacilityPath(jobFileCheck.getFacilityId(), null);
+				jobFileCheck.setScope(scopePath);
+
+				// CalendarInfoはJobControllerBean#getJobFileCheckでエージェントが取得するタイミングで設定
+				// jobFileCheck.setCalendarInfo();
+
+				// ランタイムジョブ変数は設定しない
+				// jobFileCheck.setJobRuntimeParamList();
+
+				list.add(jobFileCheck);
+			}
+		}
+
+		if (m_log.isDebugEnabled()) {
+			long endTime = System.currentTimeMillis();
+			m_log.debug("getJobKickListForJobKickCache() end. time(ms): end=" + endTime + ", elapsed="
+					+ (endTime - startTime));
+		}
+		if (m_log.isTraceEnabled()) {
+			m_log.trace("getJobKickListForJobKickCache() end. list=" + list);
+		}
+		return list;
 	}
 
 	/**

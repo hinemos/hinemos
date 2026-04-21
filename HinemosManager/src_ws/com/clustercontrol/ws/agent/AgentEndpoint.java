@@ -61,6 +61,7 @@ import com.clustercontrol.jobmanagement.bean.RunResultInfo;
 import com.clustercontrol.jobmanagement.session.JobControllerBean;
 import com.clustercontrol.jobmanagement.session.JobRunManagementBean;
 import com.clustercontrol.jobmanagement.util.JobFileCheckDuplicationGuard;
+import com.clustercontrol.jobmanagement.util.SendTopic;
 import com.clustercontrol.logfile.session.MonitorLogfileControllerBean;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
@@ -388,6 +389,26 @@ public class AgentEndpoint {
 			trigger.setTrigger_info(dg.getTriggerInfo());
 			trigger.setFilename(filename);
 			trigger.setDirectory(directory);
+
+			// 実行契機設定存在チェック
+			try {
+				new JobControllerBean().getJobFileCheck(trigger.getJobkickId());
+			} catch (JobMasterNotFound e) {
+				// エージェントとのタイミング問題で稀に発生する可能性がある
+				// ログを出力しエージェントに再送する
+				m_log.warn(String.format(
+						"The agent detected a Job Kick trigger, but the job cannot be executed because the corresponding Job Kick setting does not exist. (JobID=%s, JobKickID=%s, FacilityID=%s)",
+						jobId, trigger.getJobkickId(), String.join(",", AgentConnectUtil.getFacilityIds(agentInfo))));
+				SendTopic.putFileCheck(null);
+				return sessionId;
+			} catch (InvalidRole | HinemosUnknown e) {
+				// 通常到達しない
+				m_log.warn("jobFileCheckResult : getJobFileCheck failed. " + e.getMessage());
+				String[] args = { jobId, trigger.getTrigger_info() };
+				AplLogger.put(InternalIdCommon.JOB_SYS_017, args);
+				throw new HinemosUnknown(e.getMessage(), e);
+			}
+
 			OutputBasicInfo output = null;
             for (String facilityId : AgentConnectUtil.getFacilityIds(agentInfo)) {
 				ArrayList<String> facilityList =

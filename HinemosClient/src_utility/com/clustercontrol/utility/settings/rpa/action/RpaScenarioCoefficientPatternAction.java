@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -315,7 +316,7 @@ public class RpaScenarioCoefficientPatternAction {
 		protected boolean isExistRecord(RpaScenarioCoefficientPatternResponse xmlDto){
 			// 複合キーでチェックする
 			Optional<RpaScenarioCoefficientPatternResponse> existRecord = 
-					existIdSet.stream().filter(res -> res.getRpaToolEnvId().equals(xmlDto.getRpaToolEnvId()) && res.getOrderNo() == xmlDto.getOrderNo()).findFirst();
+					existIdSet.stream().filter(res -> res.getRpaToolEnvId().equals(xmlDto.getRpaToolEnvId()) && Objects.equals(res.getOrderNo(), xmlDto.getOrderNo())).findFirst();
 
 			return existRecord.isPresent();
 		};

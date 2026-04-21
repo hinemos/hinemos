@@ -7,8 +7,6 @@
  */
 package com.clustercontrol.rest.endpoint.notify.dto;
 
-import java.util.ArrayList;
-
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.annotation.RestItemName;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertDatetime;
@@ -45,8 +43,6 @@ public class NotifyAsMonitorRequest implements RequestDto {
 
 	@RestItemName(value = MessageConstant.MESSAGE_ORG)
 	private String messageOrg;
-
-	private ArrayList<String> notifyIdList;
 
 	private String srcId;
 
@@ -123,14 +119,6 @@ public class NotifyAsMonitorRequest implements RequestDto {
 
 	public void setMessageOrg(String messageOrg) {
 		this.messageOrg = messageOrg;
-	}
-
-	public ArrayList<String> getNotifyIdList() {
-		return notifyIdList;
-	}
-
-	public void setNotifyIdList(ArrayList<String> notifyIdList) {
-		this.notifyIdList = notifyIdList;
 	}
 
 	public String getSrcId() {

@@ -13,5 +13,6 @@
 	<classpathentry kind="lib" path="commonlib/jackson-annotations-2.15.1.jar"/>
 	<classpathentry kind="lib" path="commonlib/jackson-core-2.15.1.jar"/>
 	<classpathentry kind="lib" path="commonlib/jackson-databind-2.15.1.jar"/>
+	<classpathentry kind="lib" path="spotbugslib/spotbugs-annotations-4.7.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -733,9 +733,10 @@ public class RpaManagementToolAccountDialog extends CommonDialog{
 		inputData.setRpaScopeName(this.rpaScopeNameText.getText());
 		inputData.setDescription(this.description.getText());
 		inputData.setOwnerRoleId(this.roleIdListComposite.getText());
-		inputData.setRpaManagementToolId(
-				((RpaManagementToolResponse)this.m_comboRpaManagementToolType.getData(this.m_comboRpaManagementToolType.getText()))
-				.getRpaManagementToolId());
+		RpaManagementToolResponse rpaTypeInput = (RpaManagementToolResponse)this.m_comboRpaManagementToolType.getData(this.m_comboRpaManagementToolType.getText());
+		if(rpaTypeInput != null){
+			inputData.setRpaManagementToolId(rpaTypeInput.getRpaManagementToolId());
+		}		
 		inputData.setUrl(this.urlText.getText());
 		inputData.setAccountId(this.accountIdText.getText());
 		inputData.setPassword(this.passwordText.getText());
@@ -909,6 +910,7 @@ public class RpaManagementToolAccountDialog extends CommonDialog{
 			} catch (HinemosException e) {
 				// エンタープライズ機能が無効の場合は無視する
 				if(UrlNotFound.class.equals(e.getCause().getClass())) {
+					this.m_comboRpaManagementToolType.removeAll();
 					return;
 				}
 				m_log.warn(e.getMessage(), e);
@@ -920,6 +922,9 @@ public class RpaManagementToolAccountDialog extends CommonDialog{
 			for (RpaManagementToolResponse tool : toolList) {
 				this.m_comboRpaManagementToolType.add(tool.getRpaManagementToolName());
 				this.m_comboRpaManagementToolType.setData(tool.getRpaManagementToolName(), tool);
+			}
+			if(toolList.size() > 0){
+				m_comboRpaManagementToolType.select(0);
 			}
 		}
 	}

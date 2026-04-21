@@ -235,7 +235,7 @@ public class CommandCollector implements CollectorTask, Runnable {
 		// スケジューラにより開始されたタイミングで時刻を取得する
 		Date runStartDate = HinemosTime.getDateInstance();
 		if (log.isDebugEnabled()) {
-			log.debug("run() start, " + new SimpleDateFormat("yyyy-MM-dd hh:mm:ss,SSS").format(runStartDate)
+			log.debug("run() start, " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss,SSS").format(runStartDate)
 					+ ", monitorId=" + config.getMonitorId());
 		}
 

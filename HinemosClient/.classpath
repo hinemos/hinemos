@@ -44,6 +44,7 @@
 	<classpathentry kind="src" path="src_utility_xmlschema"/>
 	<classpathentry kind="src" path="src_xcloud"/>
 	<classpathentry kind="src" path="src_rpa"/>
+	<classpathentry exported="true" kind="lib" path="spotbugslib/spotbugs-annotations-4.7.3.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/"/>
 	<classpathentry exported="true" kind="lib" path="lib/HinemosCommon.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.15.jar" sourcepath="/HinemosCommon/commonlib/commons-codec-1.15-sources.jar"/>

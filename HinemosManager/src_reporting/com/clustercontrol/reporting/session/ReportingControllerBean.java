@@ -75,11 +75,12 @@ public class ReportingControllerBean implements CheckFacility {
 	 * @return
 	 * @throws HinemosUnknown
 	 * @throws ReportingDuplicate
+	 * @throws ReportingNotFound
 	 * @throws InvalidSetting
 	 * @throws InvalidRole
 	 */
 	public ReportingInfo addReporting(ReportingInfo reportingInfo, boolean isImport)
-			throws HinemosUnknown, ReportingDuplicate, InvalidSetting, InvalidRole {
+			throws HinemosUnknown, ReportingDuplicate, ReportingNotFound, InvalidSetting, InvalidRole {
 
 		ReportingInfo ret;
 		JpaTransactionManager jtm = null;
@@ -116,7 +117,7 @@ public class ReportingControllerBean implements CheckFacility {
 
 			jtm.commit();
 
-		} catch (HinemosUnknown | InvalidSetting | InvalidRole e) {
+		} catch (HinemosUnknown | InvalidSetting | InvalidRole | ReportingNotFound e) {
 			if (jtm != null) {
 				jtm.rollback();
 			}

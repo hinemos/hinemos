@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.DelayQueue;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.persistence.exceptions.DatabaseException;
 
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
@@ -38,6 +40,8 @@ import com.clustercontrol.plugin.impl.SchedulerPlugin;
 import com.clustercontrol.plugin.util.QueryUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.apllog.AplLogger;
+
+import jakarta.persistence.PersistenceException;
 
 /**
  * 時間がきたジョブを実行するスケジューラのコア実装部分<br>
@@ -277,6 +281,9 @@ public final class HinemosScheduler {
 	private final SchedulerPlugin.SchedulerType schedulerType;
 	private final int threshold;
 
+	private final int retryInterval = HinemosPropertyCommon.scheduler_dbms_retry_interval.getIntegerValue();
+	private final int notifyRetryCountThreshold = HinemosPropertyCommon.scheduler_dbms_notify_retry_count_threshold.getIntegerValue();
+
 	public HinemosScheduler(SchedulerPlugin.SchedulerType type) {
 		
 		schedulerType = type;
@@ -410,10 +417,11 @@ public final class HinemosScheduler {
 					// Semaphoreの取得ができたため、次はworkerに処理委譲するタスクをQueueから取得する
 					// タスクの取得は時間制限なしで実施する (タスクが投げ込まれない状況は特に異常ではないので）
 					JobWrapper fireTargetJob = schedulerQueue.take();
+					TriggerState targetStatus = fireTargetJob.getStatus();
 					m_log.trace("---3---");
 					
 					// キャンセル済みのジョブであれば何もしない
-					if (fireTargetJob.getStatus() == TriggerState.CANCELLED) {
+					if (targetStatus == TriggerState.CANCELLED) {
 						m_log.debug("mainLoop() : cancel Job=" + fireTargetJob.detail.getName() + ", group=" + fireTargetJob.detail.getGroup());
 						removeFromJobs(fireTargetJob);
 						continue;
@@ -423,9 +431,15 @@ public final class HinemosScheduler {
 					// フェッチを試みて、見つからなければ後回しにしてキューへ戻す。
 					if (SchedulerPlugin.isDBMS(schedulerType)) {
 						try {
-							QueryUtil.getDbmsSchedulerPK_NONE(fireTargetJob.getDetail().getName(), fireTargetJob.getDetail().getGroup());
+							retryDbmsSchedulerOperation(() -> {
+								QueryUtil.getDbmsSchedulerPK_NONE(fireTargetJob.getDetail().getName(),
+										fireTargetJob.getDetail().getGroup());
+								return null;
+							}, fireTargetJob, "SELECT");
 						} catch (DbmsSchedulerNotFound dsnfe) {
-							m_log.info("mainloop() : Failed to fetch. " + " Job=" + fireTargetJob.getDetail().getName() + ", group=" + fireTargetJob.getDetail().getGroup());
+							m_log.info(
+									"mainloop() : Failed to fetch. " + " Job=" + fireTargetJob.getDetail().getName()
+											+ ", group=" + fireTargetJob.getDetail().getGroup());
 							if (fireTargetJob.postpone()) {
 								schedulerQueue.add(fireTargetJob);
 							} else {
@@ -507,22 +521,36 @@ public final class HinemosScheduler {
 										InternalIdCommon.SYS_SFC_SYS_026, pluginId,
 										args);
 							}
+							// 以下のケースは事前生成スケジュールが「日時」の場合のみ
+							// この場合、再スケジュールせず実行しない
+							if (fireTargetJob.getTrigger()
+									.getMisfireInstruction() == Trigger.MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY) {
+								if (m_log.isDebugEnabled()) {
+									m_log.debug("mainLoop() : Skip job=" + fireTargetJob.detail.getName());
+								}
+								removeFromJobs(fireTargetJob);
+								continue;
+							}
 						}
 
 					}
 					// Trigger情報更新
 					if(SchedulerPlugin.isDBMS(schedulerType)){
 						try {
-							m_log.trace("mainLoop() : modifyDbmsSchedulerInternal() call.");
-							ModifyDbmsScheduler dbms = new ModifyDbmsScheduler();
-							dbms.modifyDbmsSchedulerInternal(fireTargetJob.getDetail(), fireTargetJob.getTrigger(), fireTargetJob.getStatus().name());
+							retryDbmsSchedulerOperation(() -> {
+								m_log.trace("mainLoop() : modifyDbmsSchedulerInternal() call.");
+								ModifyDbmsScheduler dbms = new ModifyDbmsScheduler();
+								dbms.modifyDbmsSchedulerInternal(fireTargetJob.getDetail(), fireTargetJob.getTrigger(),
+										fireTargetJob.getStatus().name());
+								return null;
+							}, fireTargetJob, "UPDATE");
 						} catch (DbmsSchedulerNotFound e) {
 							// キューから fireTargetJob を取り出して、この処理にたどり着くまでの間に、スケジュールが削除された場合に起こりうる
 							m_log.warn("mainLoop() : Missing." + " job=" + fireTargetJob.getDetail().getName() + ", group=" + fireTargetJob.getDetail().getGroup());
 							continue;
 						} catch(Exception e) {
 							m_log.error("modifyDbmsSchedulerInternal() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-							throw  new SchedulerException(e);
+							throw new SchedulerException(e);
 						}
 					}
 					
@@ -547,11 +575,83 @@ public final class HinemosScheduler {
 		} catch (Throwable e) {
 			// 想定外の例外によりスケジューラが終了する場合は致命的なエラーとして出力する
 			m_log.fatal("mainLoop() : unexpected error occured. schedulerType = " + schedulerType.name(), e);
-			throw e;
+			throw new SchedulerException(e);
 		} finally {
 			isShutdown = true;
 			m_log.info("mainLoop() : scheduler service finished. schedulerType = " + schedulerType.name());
 		}
+	}
+
+	/**
+	 * DBMSスケジューラの取得・更新を実行する。（リトライあり）
+	 * 
+	 * @param operation 実行するDB処理（参照・更新）
+	 * @param fireTargetJob スケジューラ情報
+	 * @param action DB操作内容（ログ出力用）
+	 * @throws Exception
+	 */
+	private void retryDbmsSchedulerOperation(Callable<Void> operation, JobWrapper fireTargetJob, String action) throws Exception {
+		boolean isNotified = false;
+		int retryCount = 0;
+		boolean shouldRetry;
+		do {
+			shouldRetry = false;
+			try {
+				operation.call();
+			} catch (PersistenceException e) {
+				// 特定のリトライ回数ごとにINTERNAL通知を行う。
+				// 参照時はDBに接続できなくてもキャッシュにアクセスするためエラーが発生しない場合がある。
+				// 参照前に HinemosEntityManager.getEntityManagerFactory().getCache().evictAll() でキャッシュを削除することでエラーが発生するようになる。
+				m_log.warn(String.format(
+						"mainLoop() : DBMS Scheduler operation failed. Action=%s, RetryCount=%s, Scheduler=%s:%s:%s - next fire time %s",
+						action, retryCount, getSchedulerType().toString(),
+						fireTargetJob.detail.getName(), fireTargetJob.detail.getGroup(), String.format(
+								"%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS", fireTargetJob.getTrigger().getNextFireTime())), e);
+				// リトライ回数10回(デフォルト)ごとにDB異常のINTERNALイベントを通知する。
+				if (retryCount > 0 && retryCount % notifyRetryCountThreshold == 0) {
+					notifyDbFailure(fireTargetJob, retryCount, e);
+					isNotified = true;
+				}
+				if (retryInterval > 0) {
+					Thread.sleep(retryInterval);
+				}
+				retryCount++;
+				shouldRetry = true;
+			}
+		} while (shouldRetry);
+		// DB異常のINTERNAL通知後にDBが復旧した場合はその旨のINTERNAL通知を行う。
+		if (isNotified) {
+			notifyDbRecovered(fireTargetJob);
+		}
+	}
+
+	/**
+	 * DB異常のINTERNAL通知を行う。
+	 * 
+	 * @param fireTargetJob 通知に含めるスケジュール情報
+	 * @param retryCount 現在のリトライ回数
+	 * @param e 通知する例外情報
+	 */
+	private void notifyDbFailure(JobWrapper fireTargetJob, int retryCount, Exception e) {
+		String[] args = { Integer.toString(retryCount), getSchedulerType().toString(), fireTargetJob.detail.getName(),
+				fireTargetJob.detail.getGroup(),
+				String.format("%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS", fireTargetJob.getTrigger().getNextFireTime()), };
+		AplLogger.put(InternalIdCommon.MNG_SYS_040, args, e.getMessage());
+	}
+
+	/**
+	 * DB異常が復旧した旨のINTERNAL通知を行う。
+	 * 
+	 * @param fireTargetJob 通知に含めるスケジュール情報
+	 */
+	private void notifyDbRecovered(JobWrapper fireTargetJob) {
+		String[] args = { getSchedulerType().toString(), fireTargetJob.detail.getName(),
+				fireTargetJob.detail.getGroup(),
+				String.format("%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS", fireTargetJob.getTrigger().getNextFireTime()) };
+		m_log.info(String.format(
+				"mainLoop() : The processing will continue as the database issue has been resolved. Scheduler=%s:%s:%s - next fire time %s",
+				(Object[]) args));
+		AplLogger.put(InternalIdCommon.MNG_SYS_041, args);
 	}
 
 	private void removeFromJobs(JobWrapper jw) {
@@ -581,7 +681,7 @@ public final class HinemosScheduler {
 				try {
 					m_log.trace("scheduleJob() : modifyDbmsSchedulerInternal() call.");
 					ModifyDbmsScheduler dbms = new ModifyDbmsScheduler();
-					dbms.modifyDbmsSchedulerInternal(wrapper.getDetail(), wrapper.getTrigger(), wrapper.getStatus().name());
+					dbms.modifyDbmsSchedulerInternal(wrapper.getDetail(), wrapper.getTrigger(), TriggerState.SCHEDULED.name());
 				} catch(Exception e) {
 					m_log.error("modifyDbmsSchedulerInternal() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 					throw new SchedulerException(e);

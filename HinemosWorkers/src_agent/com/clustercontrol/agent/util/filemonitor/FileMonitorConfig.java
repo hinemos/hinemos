@@ -8,8 +8,41 @@
 
 package com.clustercontrol.agent.util.filemonitor;
 
-public interface FileMonitorConfig {
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.Locale;
 
+import com.clustercontrol.bean.PriorityConstant;
+
+public interface FileMonitorConfig {
+	public enum CarryoverFlushPolicy {
+		TIMEOUT("timeout"),
+		SPECIFIC_TIME("specifictime");
+
+		private final String propertyValue;
+
+		private CarryoverFlushPolicy(String propertyValue) {
+			this.propertyValue = propertyValue;
+		}
+
+		public static CarryoverFlushPolicy fromProperty(String value) {
+			if (value == null) {
+				throw new IllegalArgumentException("policy is null");
+			}
+			String normalized = value.trim().toLowerCase(Locale.ENGLISH);
+			for (CarryoverFlushPolicy policy : values()) {
+				if (policy.propertyValue.equals(normalized)) {
+					return policy;
+				}
+			}
+			throw new IllegalArgumentException("unknown policy: " + value);
+		}
+
+		@Override
+		public String toString() {
+			return propertyValue;
+		}
+	}
 	/**
 	 * ファイル監視スレッド数上限の取得
 	 * 
@@ -99,4 +132,55 @@ public interface FileMonitorConfig {
 	 * @return
 	 */
 	public long getMaxFileNotifyInterval();
+	
+	/**
+	 * 監視項目の単位で時限区切りの監視を許容するかどうか
+	 * @return true：許容する、false：許容しない
+	 */
+	public default boolean isCarryoverFlushSupported() {
+		return false;
+	}
+	/**
+	 * 先頭パターン指定時に時間区切りの監視を実施するかどうか
+	 */
+	public default boolean isCarryoverFlushEnabledForStartRegex() {
+		return false;
+	}
+	/**
+	 * 終端パターン指定時に時間区切りの監視を実施するかどうか
+	 */
+	public default boolean isCarryoverFlushEnabledForEndRegex() {
+		return false;
+	}
+	/**
+	 * 改行区切り指定時に時間区切りの監視を実施するかどうか
+	 */
+	public default boolean isCarryoverFlushEnabledForReturnCode() {
+		return false;
+	}
+	/**
+	 * 時間区切りの監視を実施した際にマネージャへ通知するかどうか
+	 */
+	public default boolean isCarryoverFlushNotifyEnabled() {
+		return false;
+	}
+
+	public default int getCarryoverFlushNotifyPriority() {
+		return PriorityConstant.TYPE_INFO;
+	}
+
+	public default long getCarryoverFlushTimeout() {
+		return 0L;
+	}
+
+	public default LocalTime getCarryoverFlushSpecificTime() {
+		return null;
+	}
+	public default ZoneId getCarryoverFlushSpecificTimeOffset() {
+		return null;
+	}
+
+	public default CarryoverFlushPolicy getCarryoverFlushPolicy() {
+		return null;
+	}
 }

@@ -20,10 +20,12 @@ import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.LogFormatKeyPatternDuplicate;
 import com.clustercontrol.fault.LogFormatUsed;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
+import com.clustercontrol.hub.factory.SelectTransfer;
 import com.clustercontrol.hub.model.LogFormat;
 import com.clustercontrol.hub.model.LogFormatKey;
 import com.clustercontrol.hub.model.TransferInfo;
@@ -103,12 +105,13 @@ public class HubValidator {
 	
 
 	/**
-	 * ログフォーマット
-	 * @param format
+	 * 転送設定のバリデーション
+	 * @param transferInfo 転送設定
+	 * @param isModify 変更であるかどうか
 	 * @throws InvalidSetting
-	 * @throws LogIdDuplicate 
+	 * @throws InvalidRole 
 	 */
-	public static void validateTransferInfo(TransferInfo transferInfo, boolean isModify) throws InvalidSetting {
+	public static void validateTransferInfo(TransferInfo transferInfo, boolean isModify) throws InvalidSetting, InvalidRole {
 		if (transferInfo == null)
 			throwInvalidSetting("Transfer setting is not defined.");
 		
@@ -137,6 +140,30 @@ public class HubValidator {
 							+ e.getClass().getSimpleName() + ", " + e.getMessage());
 				}
 			}
+		}
+		
+		// カレンダID
+		//  カレンダIDがブランク(画面入力で未選択)が来た場合は、以下を鑑みてnull扱いでチェックする。
+		//  ・他機能の画面入力にてカレンダIDが未選択の場合、null（該当項目設定なし）となっている。
+		//  ・共通バリデーション処理(CommonValidator.validateCalenderId)ではブランクはnull入力扱いとなっている。
+		String targetCalId = transferInfo.getCalendarId();
+		if ("".equals(targetCalId)) {
+			targetCalId = null;
+		}
+		// 変更用のAPIから呼び出された場合、 転送設定の所属オーナーロールは入力値には存在しないため別途取得する
+		String belongingRole = transferInfo.getOwnerRoleId();
+		if (belongingRole == null && isModify) {
+			try {
+				TransferInfo entity = new SelectTransfer().getTransferInfo(transferInfo.getTransferId());
+				belongingRole = entity.getOwnerRoleId();
+			} catch (Exception e) {
+				m_log.error("validateTransferInfo() : ID=" + transferInfo.getTransferId() + " : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			}
+		}
+		// 転送設定の所属オーナーロール補完失敗時は正常なチェックが行えないのでカレンダIDのチェックはパスする。
+		if (belongingRole != null) {
+			CommonValidator.validateCalenderId(targetCalId, false, belongingRole);
 		}
 		
 		// 転送種別

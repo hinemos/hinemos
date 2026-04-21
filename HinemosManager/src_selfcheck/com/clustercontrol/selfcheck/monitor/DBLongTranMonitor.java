@@ -19,6 +19,7 @@ import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.selfcheck.util.SelfCheckDivergence;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -46,7 +47,7 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 	 */
 	@Override
 	public String toString() {
-		return "monitoring datasource (query = " + validationQuery + ")";
+		return MessageConstant.SELFCHECK_TYPE_DB_LONG_TRANSACTION.getMessage();
 	}
 
 	/**
@@ -97,7 +98,7 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 			em = tm.getEntityManager();
 			list = (List<Object>)em.createNativeQuery(validationQuery).getResultList();
 			
-			if (list.size() == 0) {
+			if (list != null && list.size() == 0) {
 				warn = false;
 			}
 
@@ -106,6 +107,7 @@ public class DBLongTranMonitor extends SelfCheckMonitorBase {
 			if (tm != null)
 				tm.rollback();
 			m_log.warn("executing query failure. (query = " + validationQuery + ")");
+			throw e;
 		} finally {
 			if (tm != null) {
 				tm.close();

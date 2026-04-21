@@ -24,11 +24,13 @@ import com.clustercontrol.hub.bean.CollectStringTag;
 import com.clustercontrol.hub.bean.StringSample;
 import com.clustercontrol.hub.bean.StringSampleTag;
 import com.clustercontrol.hub.util.CollectStringDataUtil;
+import com.clustercontrol.jobmanagement.bean.JobLinkMessageId;
 import com.clustercontrol.jobmanagement.bean.MonitorJobEndNode;
 import com.clustercontrol.jobmanagement.bean.RunStatusConstant;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
 import com.clustercontrol.monitor.plugin.model.MonitorPluginStringInfo;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
+import com.clustercontrol.notify.bean.NotifyTriggerType;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.util.MessageConstant;
@@ -142,6 +144,8 @@ public class RunMonitorCloudLogString {
 
 		// 通知情報の作成
 		OutputBasicInfo output = new OutputBasicInfo();
+		output.setJoblinkMessageId(JobLinkMessageId.getId(NotifyTriggerType.MONITOR, 
+				HinemosModuleConstant.MONITOR_CLOUD_LOG, result.monitorStrValueInfo.getMonitorId()));
 		output.setNotifyGroupId(NotifyGroupIdGenerator.generate(result.monitorInfo));
 		output.setMonitorId(result.monitorStrValueInfo.getMonitorId());
 		output.setFacilityId(facilityId);

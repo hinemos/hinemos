@@ -110,11 +110,13 @@ public class ScopeComposite extends FacilityTreeComposite {
 				StructuredSelection selection = (StructuredSelection) event.getSelection();
 
 				/*
-				 * topicが飛ぶと、ぬるぽが出るので、null checkを入れる。
+				 * topicが飛ぶと、「null pointer exception」が出るので、null checkを入れる。
 				 */
 				selectItem = (FacilityTreeItemResponse) selection.getFirstElement();
 				if (selectItem == null) {
-					m_log.warn("selectionChanged(), selectionChanged selectItem is null");
+					// ログアウト時スコープの消滅時に判定され、ログを出力する。
+					// ログレベルはINFOとする。
+					m_log.info("selectionChanged(), selectionChanged selectItem is null");
 					return;
 				}
 

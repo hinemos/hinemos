@@ -18,6 +18,9 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.agent.log.LoggerSyslog;
 import com.clustercontrol.util.BinaryUtil;
 import com.clustercontrol.util.HinemosTime;
+import com.clustercontrol.util.MessageConstant;
 
 /**
  * ファイル監視<BR>
@@ -74,7 +78,6 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 	 * 設定変更チェック用
 	 */
 	private long monitorInfoUpdateDate;
-
 
 	/**
 	 * コンストラクタ
@@ -248,6 +251,9 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 				m_log.info("run() : " + getFilePath() + " : file size becomes small");
 				fileChannel.position(0);
 				status.rotate();
+			} else if (status.getPrevSize() == currentFilesize) {
+				// 継続的な読み込みが生じている間は、時限出力を行わない
+				flushCarryoverIfNeeded();
 			}
 		} catch (IOException e) {
 			if (readSuccessFlg) {
@@ -270,6 +276,135 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 					m_log.error("run() set file-pointer error : " + e1.getMessage());
 				}
 			}
+		}
+	}
+
+	private void flushCarryoverIfNeeded() {
+		if (checkCarryoverFlush()) {
+			flushCarryover();
+		}
+	}
+	/**
+	 * キャリーオーバーに対して、時刻区切りでの監視、収集を行うかの判定
+	 * @return true:監視を実施する、 false:監視を実施しない
+	 */
+	private boolean checkCarryoverFlush() {
+		//時間区切りによる判定が有効な設定かチェック
+		if (!fileMonitorConfig.isCarryoverFlushSupported()) {
+			return false;
+		}
+
+		//キャリーオーバーがない状態では判定対象となる文言がないとして時間区切りでの出力チェックはしない
+		if (status.getCarryover() == null || status.getCarryover().isEmpty()) {
+			return false;
+		}
+
+		//時間区切りの設定が有効かチェックする
+		//設定の区切り条件とエージェントプロパティで指定された時間区切りの有効種別とマッチするかの確認
+		String delimiterType;
+		boolean flushEnable;
+		if (m_wrapper.getEndRegexString() != null && m_wrapper.getEndRegexString().length() > 0) {
+			flushEnable = fileMonitorConfig.isCarryoverFlushEnabledForEndRegex();
+			delimiterType = "EndRegex";
+		} else if (m_wrapper.getStartRegexString() != null && m_wrapper.getStartRegexString().length() > 0) {
+			flushEnable = fileMonitorConfig.isCarryoverFlushEnabledForStartRegex();
+			delimiterType = "StartRegex";
+		} else {
+			flushEnable = fileMonitorConfig.isCarryoverFlushEnabledForReturnCode();
+			delimiterType = "ReturnCode";
+		}
+		if (!flushEnable) {
+			//エージェントプロパティで指定された時間区切りの有効だが設定があっていない場合はログを出力
+			m_log.debug(String.format("CarryoverFlush is disabled. monitor id=%s, delimiter type=%s, ReturnCode=%s, StartRegex=%s, EndRegex=%s",
+					m_wrapper.getId(), delimiterType, fileMonitorConfig.isCarryoverFlushEnabledForReturnCode(),
+					fileMonitorConfig.isCarryoverFlushEnabledForStartRegex(), fileMonitorConfig.isCarryoverFlushEnabledForEndRegex()));
+
+			//監視設定は複数設定できることもあり、時間区切りの対象設定と監視設定の区切り条件があっていなくても問題はない
+			return false;
+		}
+
+		//時間区切りの監視を実施する対象となる場合、現時刻が時間区切り条件の時間を過ぎていないかチェックする
+		switch (fileMonitorConfig.getCarryoverFlushPolicy()) {
+		case TIMEOUT:
+			long elapsed = System.currentTimeMillis() - status.getCarryoverUpdateDate();
+			m_log.debug(String.format("checkCarryoverFlush() file update date=%d, elapsed time=%d.",
+					status.getCarryoverUpdateDate(), elapsed));
+
+			return elapsed > (fileMonitorConfig.getCarryoverFlushTimeout() * 60 * 1000);
+		case SPECIFIC_TIME:
+			ZoneId zoneId = fileMonitorConfig.getCarryoverFlushSpecificTimeOffset();
+			LocalDateTime now = LocalDateTime.now(zoneId);
+			// 当日すでに時間区切りによる通知が実施済みの場合、以降のチェックは行わない
+			if (status.getCarryoverSendDate() != null) {
+				LocalDateTime lastSendDateTime = LocalDateTime.ofInstant(
+						Instant.ofEpochMilli(status.getCarryoverSendDate()),
+						zoneId);
+				m_log.debug(String.format("checkCarryoverFlush() file update date=%d, last carryover send date=%s, zone offset=%s",
+						status.getCarryoverUpdateDate(), lastSendDateTime.toString(), zoneId));
+
+				if (!now.toLocalDate().isAfter(lastSendDateTime.toLocalDate())) {
+					return false;
+				}
+			}
+			return now.toLocalTime().isAfter(fileMonitorConfig.getCarryoverFlushSpecificTime());
+		}
+		//ここには到達しない
+		m_log.warn(String.format("checkCarryoverFlush() set true. Agent.properties is invalid setting."));
+
+		return false;
+	}
+
+	/**
+	 * 現在出力されている部分を対象に通知判定を行う
+	 */
+	private void flushCarryover() {
+		m_log.debug("flushCarryover() start: " + getFilePath() + ",prevsize=" + status.getPrevSize() + ",FilePointer=" + status.getPosition() + ", carryoverlength=" + status.getCarryover().length());
+		long start = System.currentTimeMillis();
+
+		//監視の実施
+		boolean isMatch = patternMatchAndSendManager(status.getCarryover());
+
+		if (fileMonitorConfig.isCarryoverFlushNotifyEnabled()) {
+			LocalDateTime lastOutputDate = LocalDateTime.ofInstant(
+					Instant.ofEpochMilli(status.getCarryoverUpdateDate()),
+					fileMonitorConfig.getCarryoverFlushSpecificTimeOffset());
+			String[] args = new String[] {
+									status.getFilePath().toString(),
+									lastOutputDate.toString(),
+									String.valueOf(isMatch)
+								};
+			
+			String msg = buildCarryoverFlushPolicyMessage();
+			sendMessage(fileMonitorConfig.getCarryoverFlushNotifyPriority(), MessageConstant.AGENT.getMessage(),
+					msg,
+					MessageConstant.MESSAGE_LOG_CARRYOVER.getMessage(args));
+		}
+
+		// 時限により通知するため、キャリーオーバー部を更新
+		status.setCarryOver("");
+		status.setCarryoverUpdateDate(null);
+		status.setCarryoverSendDate(System.currentTimeMillis());
+		status.store();
+
+		m_log.info(String.format("flushCarryover() :" + getFilePath() + " , MonitorId " + m_wrapper.getId() + " , elapsed=%d ms.", System.currentTimeMillis() - start));
+	}
+	
+	private String buildCarryoverFlushPolicyMessage() {
+		switch (fileMonitorConfig.getCarryoverFlushPolicy()) {
+		case SPECIFIC_TIME:
+			return MessageConstant.MESSAGE_LOG_FIRE_TIME_DIVISION_SPECIFICTIME.getMessage(
+					fileMonitorConfig.getCarryoverFlushPolicy().toString(),
+					fileMonitorConfig.getCarryoverFlushSpecificTime().toString(),
+					ZoneId.systemDefault().equals(fileMonitorConfig.getCarryoverFlushSpecificTimeOffset())
+						? "system default"
+						: fileMonitorConfig.getCarryoverFlushSpecificTimeOffset().toString());
+		case TIMEOUT:
+			return MessageConstant.MESSAGE_LOG_FIRE_TIME_DIVISION_TIMEOUT.getMessage(
+					fileMonitorConfig.getCarryoverFlushPolicy().toString(),
+					String.valueOf(fileMonitorConfig.getCarryoverFlushTimeout()));
+		default:
+			m_log.warn("buildCarryoverFlushPolicyMessage() : unknown carryover flush policy");
+			return "";
 		}
 	}
 
@@ -529,6 +664,9 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 				}
 				
 				if (!appendedBuf.isEmpty()) {
+					if (status.getCarryover() == null || status.getCarryover().isEmpty()) {
+						status.setCarryoverUpdateDate(System.currentTimeMillis());
+					}
 					status.setCarryOver(appendedBuf);
 					
 					// 繰越データが非常に長い場合（規定の繰越データ長超え）は繰越バッファをカットする
@@ -554,6 +692,7 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 				} else {
 					status.setCarryOver("");
 					logFlag = true;
+					status.setCarryoverUpdateDate(null);
 				}
 				
 				for (String line : lines) {
@@ -678,5 +817,5 @@ public abstract class AbstractFileMonitor<T extends AbstractFileMonitorInfoWrapp
 	 * 
 	 * @param line 対象文字列
 	 */
-	protected abstract void patternMatchAndSendManager(String line);
+	protected abstract boolean patternMatchAndSendManager(String line);
 }

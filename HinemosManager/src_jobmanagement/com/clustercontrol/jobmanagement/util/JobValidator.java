@@ -148,6 +148,8 @@ public class JobValidator {
 	private static final long DATETIME_VALUE_MAX = 3567599000L; //「999:59:59」のエポック秒
 	private static final String DATETIME_STRING_MIN = "-99:59:59"; //日時下限越えエラー通知用文字列
 	private static final String DATETIME_STRING_MAX = "999:59:59"; //日時上限越えエラー通知用文字列
+	//待ち条件群の最大件数
+	private static final int WAIT_GROUP_MAX_REC = DataRangeConstant.SMALLINT_HIGH + 1;
 	
 	/**
 	 * 実行契機のvalidate
@@ -164,7 +166,9 @@ public class JobValidator {
 		CommonValidator.validateString(MessageConstant.JOBKICK_NAME.getMessage(), jobKick.getName(), true, 1, 64);
 		// ownerRoleId
 		CommonValidator.validateOwnerRoleId(jobKick.getOwnerRoleId(), true, jobKick.getId(), HinemosModuleConstant.JOB_KICK);
-		// jobid
+		// jobid 存在チェック
+		validateJobId(jobKick.getJobunitId(),jobKick.getJobId(),true);
+		// jobid オーナーロールチェック
 		validateJobId(jobKick.getJobunitId(),jobKick.getJobId(), jobKick.getOwnerRoleId());
 
 		if (jobKick.getType() != JobKickConstant.TYPE_MANUAL) {
@@ -512,7 +516,8 @@ public class JobValidator {
 		try {
 			QueryUtil.getJobMstPK_OR(jobunitId, jobId, ownerRoleId);
 		} catch (InvalidRole e) {
-			throw e;
+			String[] args = {ownerRoleId,jobunitId,jobId};
+			throw new InvalidRole(MessageConstant.MESSAGE_JOB_ID_CANT_BE_REFERENCED_BY_OWNER_ROLE.getMessage(args)) ;
 		} catch (JobMasterNotFound e) {
 			String[] args = {jobunitId,jobId};
 			InvalidSetting e1 = new InvalidSetting(MessageConstant.MESSAGE_JOB_ID_NOT_EXIST.getMessage(args)) ;
@@ -1026,7 +1031,7 @@ public class JobValidator {
 				CommonValidator.validateString(MessageConstant.JOB_PARAM_ID.getMessage(), command.getFacilityID(), true, 1, 512);
 			}
 
-			// 試行回数の未設定時(インポート時を想定)
+			// エージェントに接続できない時に終了する-試行回数 および コマンドを繰り返し実行する-試行回数の未設定時(インポート時を想定)
 			if (command.getMessageRetry() == null || command.getCommandRetry() == null) {
 				String message = "validateJobUnit() messageRetry or commandRetry is null(job). messageRetry =" + command.getMessageRetry()
 						+ ", commandRetry =" + command.getCommandRetry();
@@ -1034,8 +1039,9 @@ public class JobValidator {
 				throw new InvalidSetting(message);
 			}
 
-			// 試行回数のチェック
-			CommonValidator.validateInt(MessageConstant.MESSAGE_RETRIES.getMessage(), command.getMessageRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
+			// エージェントに接続できない時に終了する-試行回数のチェック
+			CommonValidator.validateInt(MessageConstant.MESSAGE_RETRIES.getMessage(), command.getMessageRetry(), 0, DataRangeConstant.SMALLINT_HIGH);
+			// エージェントに接続できない時に終了する-終了値のチェック
 			CommonValidator.validateInt(MessageConstant.MESSAGE_RETRIES_END_VALUE.getMessage(), command.getMessageRetryEndValue(), DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
 
 			// コマンドを繰り返し実行する 試行回数
@@ -1176,15 +1182,15 @@ public class JobValidator {
 			}
 			
 			try {
-				// 試行回数の未設定時(インポート時を想定)
+				// エージェントに接続できない時に終了する-試行回数の未設定時(インポート時を想定)
 				if (file.getMessageRetry() == null) {
 					String message = "validateJobUnit() messageRetry or commandRetry is null(file transfer job). messageRetry =" + file.getMessageRetry();
 					m_log.info(message);
 					throw new InvalidSetting(message);
 				}
 
-				// 試行回数のチェック
-				CommonValidator.validateInt(MessageConstant.MESSAGE_RETRIES.getMessage(), file.getMessageRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
+				// エージェントに接続できない時に終了する-試行回数のチェック
+				CommonValidator.validateInt(MessageConstant.MESSAGE_RETRIES.getMessage(), file.getMessageRetry(), 0, DataRangeConstant.SMALLINT_HIGH);
 			} catch (Exception e) {
 				m_log.info("validateJobUnit() add file transfer job retry error.Dest FacilityId = " + file.getDestFacilityID() + ", jobunitId = " + jobunitId
 						+ ", jobId = " + jobId + ",messageRetry =" + file.getMessageRetry() + " : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
@@ -1253,11 +1259,17 @@ public class JobValidator {
 			}
 			MonitorInfo monitorInfo = null;
 			try {
+				//存在チェック
+				com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK(monitor.getMonitorId(),
+						ObjectPrivilegeMode.READ);
+				//オーナーロールチェック
 				monitorInfo = com.clustercontrol.monitor.run.util.QueryUtil.getMonitorInfoPK_OR(
 					monitor.getMonitorId(), jobInfo.getOwnerRoleId());
 				
 			} catch (InvalidRole e) {
-				throw e;
+				InvalidRole e0 = new InvalidRole(MessageConstant.MESSAGE_MONITOR_ID_CANT_BE_REFERENCED_BY_OWNER_ROLE
+						.getMessage(new String[] { monitor.getMonitorId(), jobInfo.getOwnerRoleId() }));
+				throw e0;
 			} catch (Exception e) {
 				String[] args = {monitor.getMonitorId()};
 				InvalidSetting e1 = new InvalidSetting(MessageConstant.MESSAGE_JOB_MONITOR_NOT_FOUND.getMessage(args));
@@ -1417,6 +1429,22 @@ public class JobValidator {
 			// 終了値
 			CommonValidator.validateInt(MessageConstant.END_VALUE.getMessage(), fileCheck.getFailureEndValue(),
 					DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
+
+			// エージェントに接続できない時に終了する-試行回数の未設定時(インポート時を想定)
+			if (fileCheck.getMessageRetry() == null) {
+				String message = "validateJobUnit() messageRetry is null(file check job). messageRetry ="
+						+ fileCheck.getMessageRetry();
+				m_log.info(message);
+				throw new InvalidSetting(message);
+			}
+
+			// エージェントに接続できない時に終了する-試行回数のチェック
+			CommonValidator.validateInt(MessageConstant.MESSAGE_RETRIES.getMessage(), fileCheck.getMessageRetry(), 0,
+					DataRangeConstant.SMALLINT_HIGH);
+			// エージェントに接続できない時に終了する-終了値のチェック
+			CommonValidator.validateInt(MessageConstant.MESSAGE_RETRIES_END_VALUE.getMessage(),
+					fileCheck.getMessageRetryEndValue(), DataRangeConstant.SMALLINT_LOW,
+					DataRangeConstant.SMALLINT_HIGH);
 		} else if (jobInfo.getType() == JobConstant.TYPE_RESOURCEJOB) {
 
 			// リソース制御ジョブのバリデーション
@@ -1458,18 +1486,18 @@ public class JobValidator {
 			}
 
 			// 対象クラウドロケーションのチェック（対象がインスタンス、ストレージの場合のみ）
-			if (resource.getResourceType() == ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode()
-					|| resource.getResourceType() == ResourceJobTypeEnum.STORAGE.getCode()) {
+			if (ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode().equals(resource.getResourceType())
+					|| ResourceJobTypeEnum.STORAGE.getCode().equals(resource.getResourceType())) {
 				CommonValidator.validateString(MessageConstant.RESOURCEJOB_ITEM_TARGET_CLOUD_LOCATION.getMessage(), resource.getResourceLocationId(), true, 1, DataRangeConstant.VARCHAR_64);
 			}
 
-			if (resource.getResourceType() == ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode()
-					|| resource.getResourceType() == ResourceJobTypeEnum.COMPUTE_FACILITY_ID.getCode()) {
+			if (ResourceJobTypeEnum.COMPUTE_COMPUTE_ID.getCode().equals(resource.getResourceType())
+					|| ResourceJobTypeEnum.COMPUTE_FACILITY_ID.getCode().equals(resource.getResourceType())) {
 
 				// 対象スコープのチェック
 				CommonValidator.validateString(MessageConstant.RESOURCEJOB_ITEM_TARGET_SCOPE.getMessage(), resource.getResourceTargetId(), true, 1, DataRangeConstant.VARCHAR_512);
 				//ノードやスコープだったら場合、存在するかチェック
-				if (resource.getResourceType().equals(ResourceJobTypeEnum.COMPUTE_FACILITY_ID)) {
+				if (ResourceJobTypeEnum.COMPUTE_FACILITY_ID.getCode().equals(resource.getResourceType())) {
 					try {
 						FacilityTreeCache.validateFacilityId(resource.getResourceTargetId(), jobInfo.getOwnerRoleId(), false);
 					} catch (FacilityNotFound e) {
@@ -1519,6 +1547,11 @@ public class JobValidator {
 					executableActionList.add(ResourceJobActionEnum.TYPE_POWEROFF.getCode());
 					executableActionList.add(ResourceJobActionEnum.TYPE_REBOOT.getCode());
 					executableActionList.add(ResourceJobActionEnum.TYPE_SNAPSHOT.getCode());
+				} else if (CloudConstant.platform_KVM.equals(platformId)) {
+					executableActionList.add(ResourceJobActionEnum.TYPE_POWERON.getCode());
+					executableActionList.add(ResourceJobActionEnum.TYPE_POWEROFF.getCode());
+					executableActionList.add(ResourceJobActionEnum.TYPE_REBOOT.getCode());
+					executableActionList.add(ResourceJobActionEnum.TYPE_SUSPEND.getCode());
 				}
 
 				boolean isExecutableAction = executableActionList.stream().anyMatch(action -> action.equals(resource.getResourceAction()));
@@ -1534,7 +1567,7 @@ public class JobValidator {
 				// 状態確認間隔のチェック
 				CommonValidator.validateInt(MessageConstant.RESOURCEJOB_ITEM_CONFIRM_INTERVAL.getMessage(), resource.getResourceStatusConfirmInterval(), 0, DataRangeConstant.INTEGER_HIGH);
 
-			} else if (resource.getResourceType() == ResourceJobTypeEnum.STORAGE.getCode()) {
+			} else if (ResourceJobTypeEnum.STORAGE.getCode().equals(resource.getResourceType())) {
 
 				// 対象ストレージのチェック
 				CommonValidator.validateString(MessageConstant.RESOURCEJOB_ITEM_TARGET_STORAGE.getMessage(), resource.getResourceTargetId(), true, 1, DataRangeConstant.VARCHAR_512);
@@ -1555,7 +1588,7 @@ public class JobValidator {
 					throw e;
 				}
 
-				if (resource.getResourceAction() == ResourceJobActionEnum.TYPE_ATTACH.getCode()) {
+				if (ResourceJobActionEnum.TYPE_ATTACH.getCode().equals(resource.getResourceAction())) {
 
 					// アタッチ先ノードのチェック（※アクションがアタッチの場合のみ）
 					CommonValidator.validateString(MessageConstant.RESOURCEJOB_ITEM_ATTACH_NODE.getMessage(), resource.getResourceAttachNode(), true, 1, DataRangeConstant.VARCHAR_512);
@@ -1680,7 +1713,7 @@ public class JobValidator {
 			for (RpaJobOptionInfo option : rpa.getRpaJobOptionInfos()) {
 				CommonValidator.validateNull(MessageConstant.RPAJOB_SCENARIO_PARAMETER.getMessage(), option.getOption());
 				CommonValidator.validateStringLengthSkippable(MessageConstant.RPAJOB_SCENARIO_PARAMETER.getMessage(), option.getOption(), 1, -1);
-				CommonValidator.validateNull(MessageConstant.RPAJOB_SCENARIO_PARAMETER_DESCRIPTION.getMessage(), option.getOption());
+				CommonValidator.validateNull(MessageConstant.RPAJOB_SCENARIO_PARAMETER_DESCRIPTION.getMessage(), option.getDescription());
 				CommonValidator.validateStringLengthSkippable(MessageConstant.RPAJOB_SCENARIO_PARAMETER_DESCRIPTION.getMessage(), option.getDescription(), 0, -1);
 			}
 
@@ -2141,16 +2174,16 @@ public class JobValidator {
 				m_log.info(e.getClass().getSimpleName() + ", " + e.getMessage());
 				throw e;
 			}
-			// 試行回数の未設定時(インポート時を想定)
+			// エージェントに接続できない時に終了する-試行回数の未設定時(インポート時を想定)
 			if (rpa.getMessageRetry() == null ) {
 				String message = "validateJobUnit() messageRetry (rpajob). messageRetry =" + rpa.getMessageRetry();
 				m_log.info(message);
 				throw new InvalidSetting(message);
 			}
-			// リトライ回数をチェック
-			CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), rpa.getMessageRetry(), 1, DataRangeConstant.SMALLINT_HIGH);
-			// コマンド実行失敗時終了値をチェック
-			CommonValidator.validateInt(MessageConstant.JOB_RETRIES.getMessage(), rpa.getMessageRetryEndValue(), DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
+			// エージェントに接続できない時に終了する-試行回数をチェック
+			CommonValidator.validateInt(MessageConstant.MESSAGE_RETRIES.getMessage(), rpa.getMessageRetry(), 0, DataRangeConstant.SMALLINT_HIGH);
+			// エージェントに接続できない時に終了する-終了値をチェック
+			CommonValidator.validateInt(MessageConstant.MESSAGE_RETRIES_END_VALUE.getMessage(), rpa.getMessageRetryEndValue(), DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
 			// コマンドの繰り返し実行は有効化不可（RPAシナリオジョブなので意味のない項目）で関連項目は入力不可
 			if( rpa.getCommandRetryFlg()){
 				String[] args = { MessageConstant.COMMAND_RETRY_FLG.getMessage() };
@@ -2506,6 +2539,19 @@ public class JobValidator {
 				CommonValidator.validateInt(MessageConstant.END_VALUE.getMessage(), waitRule.getEnd_delay_operation_end_value(), DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
 			}
 			//排他条件分岐の設定をチェック
+			if (waitRule.isExclusiveBranch() == null) {
+				if( item.getData().getType() != JobConstant.TYPE_JOBUNIT
+						&& item.getData().getType() != JobConstant.TYPE_REFERJOB
+						&& item.getData().getType() != JobConstant.TYPE_REFERJOBNET) {
+					String message = MessageConstant.MESSAGE_PLEASE_INPUT
+							.getMessage(MessageConstant.EXCLUSIVE_BRANCH_FLG.getMessage());
+					throw new InvalidSetting(message);
+				}else{
+					//設定不要な場合はfalseで補完する。
+					//本来DTO→Infoへの変換過程で実装すべきだが、一部DTO(主にコマンドラインツール向け)でTypeの参照が困難なためここで集約して行う。
+					waitRule.setExclusiveBranch(false);
+				}
+			}
 			if (waitRule.isExclusiveBranch()) {
 				//後続ジョブの優先度設定のチェック
 				//後続ジョブでないジョブの優先度設定が存在しないこと
@@ -2561,9 +2607,28 @@ public class JobValidator {
 					}
 				}
 
-				CommonValidator.validateInt(MessageConstant.END_VALUE.getMessage(), waitRule.getExclusiveBranchEndValue(), DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
+				if (nextJobOrderList==null || nextJobOrderList.isEmpty() ) {
+					String[] args = { MessageConstant.EXCLUSIVE_BRANCH_NEXT_JOB_ORDER_LIST.getMessage(),
+							MessageConstant.EXCLUSIVE_BRANCH_FLG.getMessage(),
+							waitRule.isExclusiveBranch().toString() };
+					String message = MessageConstant.MESSAGE_PLEASE_INPUT_TO.getMessage(args);
+					throw new InvalidSetting(message);
+				}
+
+				if (waitRule.getExclusiveBranchEndValue() == null) {
+					String[] args = { MessageConstant.EXCLUSIVE_BRANCH_END_VALUE.getMessage(),
+							MessageConstant.EXCLUSIVE_BRANCH_FLG.getMessage(),
+							waitRule.isExclusiveBranch().toString() };
+					String message = MessageConstant.MESSAGE_PLEASE_INPUT_TO.getMessage(args);
+					throw new InvalidSetting(message);
+				}
+				CommonValidator.validateInt(MessageConstant.EXCLUSIVE_BRANCH_END_VALUE.getMessage(), waitRule.getExclusiveBranchEndValue(), DataRangeConstant.SMALLINT_LOW, DataRangeConstant.SMALLINT_HIGH);
+
 				if (waitRule.getExclusiveBranchEndStatus() == null) {
-					String message = "validateWaitRule() : endStatus(exclusiveBranch) is null";
+					String[] args = { MessageConstant.EXCLUSIVE_BRANCH_END_STATUS.getMessage(),
+							MessageConstant.EXCLUSIVE_BRANCH_FLG.getMessage(),
+							waitRule.isExclusiveBranch().toString() };
+					String message = MessageConstant.MESSAGE_PLEASE_INPUT_TO.getMessage(args);
 					throw new InvalidSetting(message);
 				}
 			}
@@ -2644,6 +2709,13 @@ public class JobValidator {
 		if (waitRule.getObjectGroup() == null || waitRule.getObjectGroup().isEmpty()) {
 			return;
 		}
+		if (waitRule.getObjectGroup().size() > WAIT_GROUP_MAX_REC) {
+			String[] args = { item.getData().getJobunitId(), item.getData().getId() };
+			JobInvalid ji = new JobInvalid(MessageConstant.MESSAGE_WAIT_RULE_GROUP_NUM_LIMIT.getMessage(args));
+			m_log.info("validateWaitRuleObject() : " + ji.getClass().getSimpleName() + ", " + ji.getMessage());
+			throw ji;
+		}
+
 		for (JobObjectGroupInfo objectGroupInfo : waitRule.getObjectGroup()) {
 			if (objectGroupInfo == null) {
 				continue;

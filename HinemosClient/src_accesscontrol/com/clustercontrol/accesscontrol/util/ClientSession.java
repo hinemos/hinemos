@@ -142,7 +142,7 @@ public class ClientSession {
 				m_log.debug("ClientSession.doCheck() Not logged in yet. Skip.");
 				return;
 			}
-			for( RestConnectUnit connectUnit : RestConnectManager.getAllManagerList() ){
+			for( RestConnectUnit connectUnit : RestConnectManager.getActiveManagerList() ){
 				String managerName = connectUnit.getManagerName();
 				m_log.debug("ClientSession.doCheck() Get last updated time from Manager " + managerName);
 				Date lastUpdateManager = null;

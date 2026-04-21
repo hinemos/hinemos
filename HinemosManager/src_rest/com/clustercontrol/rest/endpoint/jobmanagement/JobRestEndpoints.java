@@ -58,9 +58,9 @@ import com.clustercontrol.accesscontrol.bean.FunctionConstant;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
 import com.clustercontrol.accesscontrol.model.SystemPrivilegeInfo;
+import com.clustercontrol.bean.EndStatusConstant;
 import com.clustercontrol.bean.RestHeaderConstant;
 import com.clustercontrol.calendar.util.TimeStringConverter;
-import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.fault.FacilityNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -75,6 +75,7 @@ import com.clustercontrol.fault.JobKickDuplicate;
 import com.clustercontrol.fault.JobMasterDuplicate;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.JobQueueNotFound;
+import com.clustercontrol.fault.JobRpaScreenshotFileNotFound;
 import com.clustercontrol.fault.JobSessionDuplicate;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.OtherUserGetLock;
@@ -107,6 +108,7 @@ import com.clustercontrol.jobmanagement.bean.JobPlanFilter;
 import com.clustercontrol.jobmanagement.bean.JobSchedule;
 import com.clustercontrol.jobmanagement.bean.JobTreeItem;
 import com.clustercontrol.jobmanagement.bean.JobTriggerInfo;
+import com.clustercontrol.jobmanagement.bean.JobWaitRuleInfo;
 import com.clustercontrol.jobmanagement.bean.RpaJobScreenshot;
 import com.clustercontrol.jobmanagement.model.JobLinkSendSettingEntity;
 import com.clustercontrol.jobmanagement.model.JobRpaLoginResolutionMstEntity;
@@ -187,9 +189,6 @@ public class JobRestEndpoints {
 			throws NotifyNotFound, HinemosUnknown, JobMasterNotFound, UserNotFound, InvalidRole, InvalidUserPass {
 		m_log.info("call getJobTree()");
 		
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
-		
 		JobTreeItemResponseP1 retOrg = new JobControllerBean().getJobTree(ownerRoleId, Locale.getDefault());
 
 		RestLanguageConverter.convertMessages(retOrg);
@@ -225,9 +224,6 @@ public class JobRestEndpoints {
 			throws HinemosUnknown, InvalidRole, InvalidUserPass, NotifyNotFound, JobMasterNotFound, UserNotFound {
 		m_log.info("call getJobTreeJobInfoFull()");
 		
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
-		
 		JobTreeItem retOrg= new JobControllerBean().getJobTreeFullInfo(ownerRoleId, Locale.getDefault());
 
 		JobTreeItemResponseP2 resDto = convertJobTreeItemP2FromInfo(retOrg);
@@ -258,6 +254,7 @@ public class JobRestEndpoints {
 	@APIResponses(value = {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = JobInfoResponse.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
+			@APIResponse(responseCode = STATUS_CODE_403, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_404, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Produces(MediaType.APPLICATION_JSON)
@@ -299,6 +296,7 @@ public class JobRestEndpoints {
 	@APIResponses(value = {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = JobInfoResponse.class, type = SchemaType.ARRAY)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
+			@APIResponse(responseCode = STATUS_CODE_403, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_404, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -2032,6 +2030,7 @@ public class JobRestEndpoints {
 				info.getWaitRule()
 						.setObjectGroup(converObjectGroupListFromResuestDto(dto.getWaitRule().getObjectGroup()));
 			}
+			convertSupplementExclusiveBranchSettingFromResuestDto(dto.getWaitRule(),info.getWaitRule());
 		}
 		
 		return info;
@@ -2199,6 +2198,7 @@ public class JobRestEndpoints {
 				info.getWaitRule()
 						.setObjectGroup(converObjectGroupListFromResuestDto(dto.getWaitRule().getObjectGroup()));
 			}
+			convertSupplementExclusiveBranchSettingFromResuestDto(dto.getWaitRule(),info.getWaitRule());
 		}
 		return info;
 	}
@@ -2223,6 +2223,7 @@ public class JobRestEndpoints {
 				info.getWaitRule()
 						.setObjectGroup(converObjectGroupListFromResuestDto(dto.getWaitRule().getObjectGroup()));
 			}
+			convertSupplementExclusiveBranchSettingFromResuestDto(dto.getWaitRule(),info.getWaitRule());
 		}
 		return info;
 	}
@@ -3550,9 +3551,6 @@ public class JobRestEndpoints {
 	public Response getJobmapIconImageIdListForSelect(@Context Request request, @Context UriInfo uriInfo, @QueryParam("ownerRoleId") String ownerRoleId) throws IconFileNotFound, HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.debug("getJobmapIconImageIdListForSelect : ownerRoleId=" + ownerRoleId);
 		
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
-		
 		List<String> iconIdList = new JobControllerBean().getJobmapIconImageIdListForSelect(ownerRoleId);
 		JobmapIconImageInfoResponseP1 infoRes = new JobmapIconImageInfoResponseP1();
 		infoRes.setIconIdList(iconIdList);
@@ -3618,9 +3616,6 @@ public class JobRestEndpoints {
 			@Context UriInfo uriInfo) throws HinemosUnknown, InvalidUserPass, InvalidRole, InvalidSetting {
 		m_log.info("call getJobLinkSendSettingList()");
 
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
-		
 		List<JobLinkSendSettingEntity> infoResList = new JobControllerBean().getJobLinkSendSettingList(ownerRoleId);
 		List<JobLinkSendSettingResponse> dtoResList = new ArrayList<>();
 		for (JobLinkSendSettingEntity info : infoResList) {
@@ -4193,14 +4188,19 @@ public class JobRestEndpoints {
 	public Response downloadRpaScreenshotFile( @Context Request request, @Context UriInfo uriInfo,
 			@PathParam("sessionId") String sessionId, @PathParam("jobunitId") String jobunitId,
 			@PathParam("jobId") String jobId, @PathParam("facilityId") String facilityId, @PathParam("regDate") String regDate)
-					throws HinemosUnknown, InvalidUserPass, InvalidRole, InvalidSetting {
+					throws HinemosUnknown, InvalidUserPass, InvalidRole, JobRpaScreenshotFileNotFound, InvalidSetting {
 		m_log.info("call downloadRpaScreenshotFile()");
 
-		RpaJobScreenshot infoRes = new JobControllerBean().getJobRpaScreenshot(sessionId, jobunitId, jobId, facilityId,
-				RestCommonConverter.convertDTStringToHinemosTime(regDate, MessageConstant.TARGET_DATETIME.getMessage()));
-		File file = RestByteArrayConverter.convertByteArrayToFile(infoRes.getFiledata(), RestTempFileType.JOB_RPA_SCREENSHOT);
-		StreamingOutput stream = RestTempFileUtil.getTempFileStream(file);
-		return Response.ok(stream).header("Content-Disposition", "attachment; filename=" + file.getName()).build();
+		try{
+			RpaJobScreenshot infoRes = new JobControllerBean().getJobRpaScreenshot(sessionId, jobunitId, jobId, facilityId,
+					RestCommonConverter.convertDTStringToHinemosTime(regDate, MessageConstant.TARGET_DATETIME.getMessage()));
+			File file = RestByteArrayConverter.convertByteArrayToFile(infoRes.getFiledata(), RestTempFileType.JOB_RPA_SCREENSHOT);
+			StreamingOutput stream = RestTempFileUtil.getTempFileStream(file);
+			return Response.ok(stream).header("Content-Disposition", "attachment; filename=" + file.getName()).build();
+		}catch(JobRpaScreenshotFileNotFound e){
+			String[] args = {sessionId,jobunitId,jobId,facilityId,regDate};
+			throw new  JobRpaScreenshotFileNotFound(MessageConstant.MESSAGE_JOB_RPA_SCREENSHOT_NOTFOUND.getMessage(args),e);
+		}
 	}
 	
 	/**
@@ -4240,5 +4240,27 @@ public class JobRestEndpoints {
 			orderNo++;
 		}
 		return retList; 
+	}
+	/**
+	 * 待ち条件中の排他分岐(ExclusiveBranch)に関わる設定についてRequestDto→Info変換の内容を補完します。
+	 * 通常の変換[RestBeanUtil.convertBean()]では対応しきれない部分について補完しています。
+	 * @param dto
+	 * @param info
+	 * @return void
+	 */
+	private static void convertSupplementExclusiveBranchSettingFromResuestDto(JobWaitRuleInfoRequest dto, JobWaitRuleInfo info ){
+		// null設定連携
+		if( dto.getExclusiveBranchEndStatus() == null){
+			info.setExclusiveBranchEndStatus(null);
+		}
+		// 排他分岐 有り以外の場合 関連項目が非設定（null）なら デフォルト値をセット（クライアント画面と同様に調整）
+		if (info.isExclusiveBranch() == null || !info.isExclusiveBranch()) {
+			if (info.getExclusiveBranchEndStatus() == null) {
+				info.setExclusiveBranchEndStatus(EndStatusConstant.TYPE_NORMAL);
+			}
+			if (info.getExclusiveBranchEndValue() == null) {
+				info.setExclusiveBranchEndValue(1);
+			}
+		}
 	}
 }

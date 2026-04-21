@@ -101,7 +101,7 @@ public class HistorySelectionChangedListener implements ISelectionChangedListene
 				.getActiveWorkbenchWindow().getActivePage();
 
 		// 自動更新によりジョブ[履歴]ビューがアクティブでない場合にも呼ばれる可能性があるので注意
-		// ジョブ[詳細]ビューを更新する
+		// ジョブ履歴[ジョブ詳細]ビューを更新する
 		m_log.debug("selectionChanged() : job detail update");
 		IViewPart viewPartDetail = page.findView(JobDetailView.ID);
 		if (viewPartDetail != null) {

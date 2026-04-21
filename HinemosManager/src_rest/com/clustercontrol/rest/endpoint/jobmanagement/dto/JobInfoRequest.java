@@ -8,6 +8,8 @@
 package com.clustercontrol.rest.endpoint.jobmanagement.dto;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
@@ -16,6 +18,7 @@ import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.JobTypeEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.PrioritySelectEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ReferJobSelectTypeEnum;
 import com.clustercontrol.rest.endpoint.notify.dto.NotifyRelationInfoRequest;
+import com.clustercontrol.util.MessageConstant;
 
 public class JobInfoRequest implements RequestDto{
 	
@@ -609,13 +612,31 @@ public class JobInfoRequest implements RequestDto{
 			}
 		}
 		if (param != null) {
+			Set<String> existIds = new HashSet<String>();
 			for (JobParameterInfoRequest req : param) {
 				req.correlationCheck();
+				//ID重複チェック
+				if (req.getParamId() != null && !req.getParamId().isEmpty()) {
+					if (existIds.contains(req.getParamId())) {
+						String[] args ={ req.getParamId(),  MessageConstant.JOB_PARAM_ID.getMessage() };
+						throw new InvalidSetting(MessageConstant.MESSAGE_DUPLICATED.getMessage(args));
+					}
+					existIds.add(req.getParamId());
+				}
 			}
 		}
 		if (notifyRelationInfos != null) {
+			Set<String> existIds = new HashSet<String>();
 			for (NotifyRelationInfoRequest req : notifyRelationInfos) {
 				req.correlationCheck();
+				//重複チェック
+				if (req.getNotifyId() != null && !req.getNotifyId().isEmpty()) {
+					if (existIds.contains(req.getNotifyId())) {
+						String[] args ={ req.getNotifyId(),  MessageConstant.NOTIFY_ID.getMessage() };
+						throw new InvalidSetting(MessageConstant.MESSAGE_DUPLICATED.getMessage(args));
+					}
+					existIds.add(req.getNotifyId());
+				}
 			}
 		}
 	}

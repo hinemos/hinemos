@@ -154,7 +154,8 @@ public class WinRs {
 	private WsmanConnection createConnection() {
 		// コネクションと認証の設定
 		WsmanConnection conn = WsmanConnection.createConnection(url);
-		conn.setAuthenticationScheme("basic");
+		String authenticationScheme = HinemosPropertyCommon.infra_winrm_authschema.getStringValue();
+		conn.setAuthenticationScheme(authenticationScheme);
 		conn.setUsername(username);
 		conn.setUserpassword(password);
 		conn.setTimeout(httpTimeout);

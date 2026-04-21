@@ -827,8 +827,8 @@ abstract public class RunMonitor {
 						// 重要度は不明
 						int priority = PriorityConstant.TYPE_UNKNOWN;
 						
-						String message = MessageConstant.MESSAGE_MONITOR_UNCOMPLETED.getMessage();
-						String messageOrg = MessageConstant.MESSAGE_MONITOR_UNCOMPLETED.getMessage();
+						String message = MessageConstant.MESSAGE_MONITOR_UNCOMPLETED.getMessage(m_facilityId);
+						String messageOrg = MessageConstant.MESSAGE_MONITOR_UNCOMPLETED.getMessage(m_facilityId);
 						notifyInfo.setPriority(priority);
 						notifyInfo.setMessage(message);
 						notifyInfo.setMessageOrg(messageOrg);

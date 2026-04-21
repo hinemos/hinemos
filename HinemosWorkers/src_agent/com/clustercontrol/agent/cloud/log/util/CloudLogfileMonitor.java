@@ -68,7 +68,7 @@ public class CloudLogfileMonitor extends AbstractFileMonitor<MonitorInfoWrapper>
 	 * ファイル監視で取得した文字列から日時情報を抽出して監視を行います。
 	 */
 	@Override
-	protected void patternMatchAndSendManager(String line) {
+	protected boolean patternMatchAndSendManager(String line) {
 		// 日時情報のみを取り出して監視
 		String monLine = line;
 		try {
@@ -103,7 +103,7 @@ public class CloudLogfileMonitor extends AbstractFileMonitor<MonitorInfoWrapper>
 
 		Date orgDate = new Date(date);
 
-		MonitorStringUtil.patternMatch(m_wrapper.formatLine(monLine, fileMonitorConfig.getFilMessageLength()),
+		return MonitorStringUtil.patternMatch(m_wrapper.formatLine(monLine, fileMonitorConfig.getFilMessageLength()),
 				m_wrapper.getMonitorInfo(), m_wrapper.getRunInstructionInfo(), orgDate, logStreamName);
 
 	}

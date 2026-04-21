@@ -733,11 +733,23 @@ public class MasterConv {
 		}
 
 		//排他分岐
-		ret.setExclusiveBranch(jobMasterXML.getExclusiveBranch());
+		if (jobMasterXML.hasExclusiveBranch()) {
+			ret.setExclusiveBranch(jobMasterXML.getExclusiveBranch());
+		}else{
+			ret.setExclusiveBranch(null);
+		}
 		//実行されなかったジョブの終了状態
-		ret.setExclusiveBranchEndStatus(OpenApiEnumConverter.integerToEnum(jobMasterXML.getExclusiveBranchEndStatus() , JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum.class) );
+		if (jobMasterXML.hasExclusiveBranchEndStatus()) {
+			ret.setExclusiveBranchEndStatus(OpenApiEnumConverter.integerToEnum(jobMasterXML.getExclusiveBranchEndStatus() , JobWaitRuleInfoResponse.ExclusiveBranchEndStatusEnum.class) );
+		}else{
+			ret.setExclusiveBranchEndStatus(null);
+		}
 		//実行されなかったジョブの終了値
-		ret.setExclusiveBranchEndValue(jobMasterXML.getExclusiveBranchEndValue());
+		if (jobMasterXML.hasExclusiveBranchEndValue()) {
+			ret.setExclusiveBranchEndValue(jobMasterXML.getExclusiveBranchEndValue());
+		}else{
+			ret.setExclusiveBranchEndValue(null);
+		}
 
 		ExclusiveJobValue[] exclusiveJobValues = jobMasterXML.getExclusiveJobValue();
 		sort(exclusiveJobValues);

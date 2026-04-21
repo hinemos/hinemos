@@ -18,6 +18,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 
 import com.clustercontrol.jobmanagement.composite.DetailComposite;
+import com.clustercontrol.jobmanagement.composite.DetailComposite.JobElement;
 import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.ForwardFileView;
@@ -75,8 +76,17 @@ public class JobDetailSelectionChangedListener implements ISelectionChangedListe
 
 		//ジョブIDを取得
 		if (((StructuredSelection) event.getSelection()).getFirstElement() != null) {
-			JobTreeItemWrapper item = (JobTreeItemWrapper) ((StructuredSelection) event
-					.getSelection()).getFirstElement();
+			Object selected = ((StructuredSelection) event.getSelection()).getFirstElement();
+			
+			// ジョブ履歴[ジョブ詳細]ビューの表示モデルをJobElement型に変更したための対応
+			// 選択された項目がJobElementの場合、JobElementが保持するJobTreeItemWrapperを取り出す
+			JobTreeItemWrapper item;
+			if (selected instanceof JobElement) {
+				item = ((JobElement)selected).getItem();
+			} else {
+				return;
+			}
+			
 			JobInfoWrapper info = item.getData();
 			jobunitId = info.getJobunitId();
 			jobId = info.getId();

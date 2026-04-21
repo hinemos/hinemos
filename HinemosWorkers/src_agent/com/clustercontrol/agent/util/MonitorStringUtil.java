@@ -42,9 +42,9 @@ public class MonitorStringUtil {
 	 * @param line 監視文字列
 	 * @param monitorInfo 監視設定
 	 */
-	public static void patternMatch(String line, AgtMonitorInfoResponse monitorInfo,
+	public static boolean patternMatch(String line, AgtMonitorInfoResponse monitorInfo,
 			AgtRunInstructionInfoResponse runInstructionInfo, String filename) {
-		patternMatch(line, monitorInfo, runInstructionInfo, null, filename);
+		return patternMatch(line, monitorInfo, runInstructionInfo, null, filename);
 	}
 
 	/**
@@ -53,7 +53,7 @@ public class MonitorStringUtil {
 	 * @param generationDate 生成日時
 	 * @param monitorInfo 監視設定
 	 */
-	public static void patternMatch(String line, AgtMonitorInfoResponse monitorInfo,
+	public static boolean patternMatch(String line, AgtMonitorInfoResponse monitorInfo,
 			AgtRunInstructionInfoResponse runInstructionInfo, Date generationDate, String filename) {
 				
 		//　クラウドログ監視の場合は、ログの出力日時がカレンダの稼働時間帯に含まれているかを確認
@@ -62,16 +62,16 @@ public class MonitorStringUtil {
 					&& !RestCalendarUtil.isRun(monitorInfo.getCalendar(), generationDate)) {
 				m_log.debug(
 						"patternMatch is skipped because of calendar (cloudLog). GenerationDate: " + generationDate);
-				return;
+				return false;
 			}
 		} else {
 			if (runInstructionInfo == null && monitorInfo.getCalendar() != null
 					&& !RestCalendarUtil.isRun(monitorInfo.getCalendar())) {
 				m_log.debug("patternMatch is skipped because of calendar");
-				return;
+				return false;
 			}
 		}
-		
+
 		boolean processed = false;
 		if (runInstructionInfo != null || monitorInfo.getMonitorFlg().booleanValue()) {
 			int order_no = 0;
@@ -148,8 +148,7 @@ public class MonitorStringUtil {
 							} else {
 								CloudLogResultForwarder.getInstance().add(message, logmsg, monitorInfo, stringInfo, runInstructionInfo);
 							}
-						} 
-						
+						}
 						processed = true;
 						
 						m_log.debug("patternMatch send message : " + message);
@@ -228,6 +227,7 @@ public class MonitorStringUtil {
 			if (!processed)
 				m_log.debug("collected no data.");
 		}
+		return processed;
 	}
 
 	private static AgtMessageInfoRequest generateAgtMessageInfoRequest(String line, Date generationDate) {

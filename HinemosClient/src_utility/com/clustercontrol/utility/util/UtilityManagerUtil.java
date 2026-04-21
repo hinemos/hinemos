@@ -50,7 +50,8 @@ public class UtilityManagerUtil {
 
 			this.currentManagerName = managerName;
 
-			if (!oldManagerName.equals(currentManagerName)) {
+			if ((oldManagerName == null && currentManagerName != null)
+					|| (oldManagerName != null && !oldManagerName.equals(currentManagerName))) {
 				for (ManagerChangeListener listener : notifyList) {
 					listener.notifyManagerChanged();
 				}

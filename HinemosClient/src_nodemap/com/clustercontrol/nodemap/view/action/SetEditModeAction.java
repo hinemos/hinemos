@@ -24,7 +24,6 @@ import org.eclipse.ui.menus.UIElement;
 
 import com.clustercontrol.nodemap.view.NodeMapView;
 import com.clustercontrol.util.Messages;
-import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 
 /**
  * ビューをコネクション編集可能モードに変更するクライアント側アクションクラス<BR>
@@ -62,17 +61,6 @@ public class SetEditModeAction extends AbstractHandler implements IElementUpdate
 		view.setMode(NodeMapView.Mode.EDIT_CONNECTION_MODE);
 		
 		view.setFocus();
-		
-		// 組み込みスコープの場合はコンテキストメニュー選択不能にする
-		String scopeFacilityId = view.getController().getCurrentScope();
-		boolean isScopeBuiltin = FacilityTreeAttributeConstant.isBuiltinScope(scopeFacilityId);
-
-		if( isScopeBuiltin ){
-			view.setEnabled(false);
-		}
-		else{
-			view.setEnabled(true);
-		}
 
 		return null;
 	}

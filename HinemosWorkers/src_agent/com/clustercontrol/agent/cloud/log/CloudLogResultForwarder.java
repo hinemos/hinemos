@@ -156,7 +156,7 @@ public class CloudLogResultForwarder {
 			return;
 		}
 
-		transporter.add(result);
+		transporter.addWithWait(result);
 	}
 
 	private static class CloudLogResultProcessor implements TransportProcessor<MonitorResult> {

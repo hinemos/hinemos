@@ -9,6 +9,7 @@
 package com.clustercontrol.mbean;
 
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidSetting;
 
 public interface ManagerMXBean {
 
@@ -36,6 +37,12 @@ public interface ManagerMXBean {
 	 * @return セルフチェック機能が最後に動作した日時文字列を
 	 */
 	public String getSelfCheckLastFireTimeStr();
+
+	/**
+	 * カスタムトラップの統計情報を返す。<br/>
+	 * @return カスタムトラップの統計情報
+	 */
+	public String getCustomTrapStatistics();
 
 	/**
 	 * syslogの統計情報を返す。<br/>
@@ -92,6 +99,12 @@ public interface ManagerMXBean {
 	 * @return syslogの処理待ち数
 	 */
 	public int getSyslogQueueCount();
+	
+	/**
+	 * カスタムトラップの処理待ち数を取得
+	 * @return カスタムトラップの処理待ち数
+	 */
+	public int getCustomTrapQueueCount();
 	
 	/**
 	 * WS(ForAgent)のQueueサイズを取得
@@ -159,8 +172,9 @@ public interface ManagerMXBean {
 	 * @param tableName テーブル名
 	 * 
 	 * @return テーブルのレコード数
+	 * @throws InvalidSetting 
 	 */
-	public long getTableRecordCount(String tableName);
+	public long getTableRecordCount(String tableName) throws InvalidSetting;
 
 	/**
 	 * JPAのキャッシュを全て出力する。

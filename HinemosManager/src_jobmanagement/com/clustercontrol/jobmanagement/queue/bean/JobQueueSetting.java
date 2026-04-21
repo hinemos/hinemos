@@ -28,12 +28,16 @@ import com.clustercontrol.util.MessageConstant;
 public class JobQueueSetting implements Serializable {
 
 	// 実装を変更したときのバージョン番号に合わせる。 {major(high)}_{major(low)}_{minor}_{patch}
-	private static final long serialVersionUID = 6_02_00_00000000L;
+	private static final long serialVersionUID = 7_01_01_20251001L;
 
 	private String queueId;
 	private String name;
 	private Integer concurrency;
 	private String ownerRoleId;
+	private Long regDate;
+	private String regUser;
+	private Long updateDate;
+	private String updateUser;
 
 	public JobQueueSetting() {
 	}
@@ -49,6 +53,10 @@ public class JobQueueSetting implements Serializable {
 		name = entity.getName();
 		concurrency = entity.getConcurrency();
 		ownerRoleId = entity.getOwnerRoleId();
+		regDate = entity.getRegDate();
+		regUser = entity.getRegUser();
+		updateDate = entity.getUpdateDate();
+		updateUser = entity.getUpdateUser();
 	}
 	
 	/**
@@ -67,6 +75,10 @@ public class JobQueueSetting implements Serializable {
 				JobQueueConstant.CONCURRENCY_MIN, JobQueueConstant.CONCURRENCY_MAX);
 		CommonValidator.validateId(MessageConstant.OWNER_ROLE_ID.getMessage(), ownerRoleId,
 				DataRangeConstant.OWNER_ROLE_ID_MAXLEN);
+		CommonValidator.validateString(MessageConstant.REG_USER_ID.getMessage(), regUser, false, 0,
+				DataRangeConstant.USER_ID_MAXLEN);
+		CommonValidator.validateString(MessageConstant.UPDATE_USER_ID.getMessage(), updateUser, false, 0,
+				DataRangeConstant.USER_ID_MAXLEN);
 	}
 	
 	// ---------------
@@ -117,4 +129,31 @@ public class JobQueueSetting implements Serializable {
 		this.ownerRoleId = ownerRoleId;
 	}
 
+	public Long getRegDate() {
+		return regDate;
+	}
+	public void setRegDate(Long regDate) {
+		this.regDate = regDate;
+	}
+
+	public String getRegUser() {
+		return regUser;
+	}
+	public void setRegUser(String regUser) {
+		this.regUser = regUser;
+	}
+
+	public Long getUpdateDate() {
+		return updateDate;
+	}
+	public void setUpdateDate(Long updateDate) {
+		this.updateDate = updateDate;
+	}
+
+	public String getUpdateUser() {
+		return updateUser;
+	}
+	public void setUpdateUser(String updateUser) {
+		this.updateUser = updateUser;
+	}
 }

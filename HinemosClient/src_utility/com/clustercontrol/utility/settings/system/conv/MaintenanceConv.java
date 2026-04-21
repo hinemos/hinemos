@@ -156,8 +156,10 @@ public class MaintenanceConv {
 		AddMaintenanceRequest ret = new AddMaintenanceRequest();
 
 		ret.setMaintenanceId(info.getMaintenanceId());
-		if (info.getDescription() != null && !info.getDescription().isEmpty()) {
+		if (info.getDescription() != null) {
 			ret.setDescription(info.getDescription());
+		} else {
+			ret.setDescription("");
 		}
 		ret.setTypeId(AddMaintenanceRequest.TypeIdEnum.fromValue(info.getTypeId()));
 		// 2012/04/09 修正(カレンダIDが未設定の場合の対応)

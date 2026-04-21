@@ -156,42 +156,10 @@ public class JobDataMap extends StringKeyDirtyFlagMap implements Serializable {
 		return ((String) obj).charAt(0);
 	}
 
-	public double getDoubleValueFromString(String key) {
-		Object obj = get(key);
-
-		return Double.valueOf((String) obj);
-	}
-
-	public double getDoubleValue(String key) {
-		Object obj = get(key);
-
-		if(obj instanceof String) {
-			return getDoubleValueFromString(key);
-		} else {
-			return getDouble(key);
-		}
-	}
-
 	public Double getDoubleFromString(String key) {
 		Object obj = get(key);
 
 		return new Double((String) obj);
-	}
-
-	public float getFloatValueFromString(String key) {
-		Object obj = get(key);
-
-		return new Float((String) obj);
-	}
-
-	public float getFloatValue(String key) {
-		Object obj = get(key);
-
-		if(obj instanceof String) {
-			return getFloatValueFromString(key);
-		} else {
-			return getFloat(key);
-		}
 	}
 
 	public Float getFloatFromString(String key) {

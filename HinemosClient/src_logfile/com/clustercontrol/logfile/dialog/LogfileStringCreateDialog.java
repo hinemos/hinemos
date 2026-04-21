@@ -435,11 +435,11 @@ public class LogfileStringCreateDialog extends CommonMonitorStringDialog {
 		if (!txtPatternHead.getText().isEmpty()) {
 			txtPatternHead.setEnabled(true);
 			txtPatternTail.setEnabled(false);
-			m_fileReturnCode.setEnabled(false);
+			m_fileReturnCode.setEnabled(true);
 		} else if (!txtPatternTail.getText().isEmpty()) {
 			txtPatternHead.setEnabled(false);
 			txtPatternTail.setEnabled(true);
-			m_fileReturnCode.setEnabled(false);
+			m_fileReturnCode.setEnabled(true);
 		} else {
 			txtPatternHead.setEnabled(true);
 			txtPatternTail.setEnabled(true);

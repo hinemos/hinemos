@@ -325,7 +325,7 @@ public class ImportDialog extends CommonDialog {
 		 * インポート処理
 		 */
 		// ダイアログ表示
-		MibImportDialog dialog = new MibImportDialog(shell, monitorId);
+		MibImportDialog dialog = new MibImportDialog(shell, monitorId, managerName);
 		dialog.setDetailList(mibListComposite.getMibDetailComposite().getSelectDetails());
 		
 		if(dialog.open() == Window.OK){

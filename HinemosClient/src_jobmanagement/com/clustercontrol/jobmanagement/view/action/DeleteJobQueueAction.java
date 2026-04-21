@@ -100,7 +100,8 @@ public class DeleteJobQueueAction extends AbstractHandler implements IElementUpd
 		if (view == null) {
 			setBaseEnabled(false);
 		} else {
-			setBaseEnabled(view.getSelectedJobQueueCount() == 1);
+			// 複数削除を許可
+			setBaseEnabled(view.getSelectedJobQueueCount() > 0);
 		}
 	}
 }

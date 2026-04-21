@@ -8,7 +8,6 @@
 
 package com.clustercontrol.jobmanagement.session;
 
-import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,25 +36,19 @@ import com.clustercontrol.accesscontrol.session.AccessControllerBean;
 import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
 import com.clustercontrol.bean.HinemosModuleConstant;
-import com.clustercontrol.bean.JobApprovalStatusConstant;
 import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.calendar.model.CalendarInfo;
 import com.clustercontrol.calendar.session.CalendarControllerBean;
 import com.clustercontrol.commons.session.CheckFacility;
-import com.clustercontrol.commons.util.AbstractCacheManager;
-import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.HinemosSessionContext;
-import com.clustercontrol.commons.util.ICacheManager;
 import com.clustercontrol.commons.util.ILock;
-import com.clustercontrol.commons.util.ILockManager;
 import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JdbcBatchExecutor;
 import com.clustercontrol.commons.util.JdbcBatchQuery;
 import com.clustercontrol.commons.util.JpaTransactionManager;
-import com.clustercontrol.commons.util.LockManagerFactory;
 import com.clustercontrol.commons.util.Transaction;
 import com.clustercontrol.fault.CalendarNotFound;
 import com.clustercontrol.fault.FacilityNotFound;
@@ -71,6 +64,7 @@ import com.clustercontrol.fault.JobKickDuplicate;
 import com.clustercontrol.fault.JobMasterDuplicate;
 import com.clustercontrol.fault.JobMasterNotFound;
 import com.clustercontrol.fault.JobQueueNotFound;
+import com.clustercontrol.fault.JobRpaScreenshotFileNotFound;
 import com.clustercontrol.fault.JobSessionDuplicate;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
@@ -149,12 +143,12 @@ import com.clustercontrol.jobmanagement.queue.bean.JobQueueSetting;
 import com.clustercontrol.jobmanagement.queue.bean.JobQueueSettingViewFilter;
 import com.clustercontrol.jobmanagement.queue.bean.JobQueueSettingViewInfo;
 import com.clustercontrol.jobmanagement.util.DeletePremakeWorker;
+import com.clustercontrol.jobmanagement.util.JobKickCache;
 import com.clustercontrol.jobmanagement.util.JobLinkMessageExpInfoJdbcBatchInsert;
 import com.clustercontrol.jobmanagement.util.JobLinkMessageJdbcBatchInsert;
 import com.clustercontrol.jobmanagement.util.JobValidator;
 import com.clustercontrol.jobmanagement.util.PutFileCheckCallback;
 import com.clustercontrol.jobmanagement.util.QueryUtil;
-import com.clustercontrol.jobmanagement.util.SendTopic;
 import com.clustercontrol.monitor.run.model.MonitorInfo;
 import com.clustercontrol.notify.bean.OutputBasicInfo;
 import com.clustercontrol.performance.util.PollingDataManager;
@@ -481,7 +475,7 @@ public class JobControllerBean implements CheckFacility {
 			jtm.begin();
 
 			//ジョブツリーを取得
-			jobInfo = FullJob.getJobFull(jobInfo);
+			jobInfo = FullJob.getJobFullandCheck(jobInfo);
 
 			jtm.commit();
 		} catch (JobMasterNotFound | UserNotFound | HinemosUnknown | InvalidRole e) {
@@ -524,7 +518,7 @@ public class JobControllerBean implements CheckFacility {
 			//ジョブ詳細を取得
 			for (JobInfo info : jobList) {
 				try {
-					ret.add(FullJob.getJobFull(info));
+					ret.add(FullJob.getJobFullandCheck(info));
 				} catch (JobMasterNotFound e) {
 					m_log.debug("getJobFullList : " + e.getMessage());
 				}
@@ -2879,45 +2873,75 @@ public class JobControllerBean implements CheckFacility {
 				+ ", FilePath = " + info.getDirectory() + ",  EventType = " + info.getEventType());
 
 		m_log.debug("addFileCheck() : CreateTime=" + info.getCreateTime() + ",  UpdateTime = " + info.getUpdateTime());
-		JpaTransactionManager jtm = new JpaTransactionManager();
+		JpaTransactionManager jtm = null;
 		JobFileCheck ret = null;
 		// 新規登録ユーザ、最終変更ユーザを設定
 		String loginUser =(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
-		// DBにスケジュール情報を保存
-		try {
-			jtm.begin();
-			// 入力チェック
-			JobValidator.validateJobFileCheck(info);
-			
-			//ユーザがオーナーロールIDに所属しているかチェック
-			RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
-					(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
-					(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
-			
-			ModifyJobKick modify = new ModifyJobKick();
-			modify.addJobKick(info, loginUser, JobKickConstant.TYPE_FILECHECK);
-			
-			// ファイルチェック実行契機再取得のコールバック化
-			jtm.addCallback(new PutFileCheckCallback());
-			
-			jtm.commit();
-			clearJobKickCache();
 
-			SelectJobKick select = new SelectJobKick();
-			ret = (JobFileCheck)select.getJobKick(info.getId(), JobKickConstant.TYPE_FILECHECK);
-		} catch (HinemosUnknown | InvalidSetting | JobKickDuplicate | InvalidRole e) {
-			jtm.rollback();
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
-			jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e) {
-			m_log.warn("addFileCheck() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
+		JobKickCache.writeLock();
+		try {
+			try {
+				jtm = new JpaTransactionManager();
+				jtm.begin();
+				// 入力チェック
+				JobValidator.validateJobFileCheck(info);
+				
+				//ユーザがオーナーロールIDに所属しているかチェック
+				RoleValidator.validateUserBelongRole(info.getOwnerRoleId(),
+						(String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID),
+						(Boolean)HinemosSessionContext.instance().getProperty(HinemosSessionContext.IS_ADMINISTRATOR));
+
+				// DBにファイルチェック情報を保存
+				ModifyJobKick modify = new ModifyJobKick();
+				modify.addJobKick(info, loginUser, JobKickConstant.TYPE_FILECHECK);
+				jtm.commit();
+			} catch (HinemosUnknown | InvalidSetting | JobKickDuplicate | InvalidRole e) {
+				if (jtm != null) {
+					jtm.rollback();
+				}
+				throw e;
+			} catch (ObjectPrivilege_InvalidRole e) {
+				if (jtm != null) {
+					jtm.rollback();
+				}
+				throw new InvalidRole(e.getMessage(), e);
+			} catch (Exception e) {
+				m_log.warn("addFileCheck() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				if (jtm != null) {
+					jtm.rollback();
+				}
+				throw new HinemosUnknown(e.getMessage(), e);
+			} finally {
+				if (jtm != null) {
+					jtm.close();
+				}
+			}
+
+			try {
+				jtm = new JpaTransactionManager();
+				jtm.begin();
+				// 取得し直してキャッシュに登録
+				JobKick jobKick = new SelectJobKick().getJobKick(info.getId(), JobKickConstant.TYPE_FILECHECK);
+				JobKickCache.put(jobKick);
+				ret = (JobFileCheck)jobKick;
+
+				// エージェントへのファイルチェック実行契機再取得指示のコールバック登録
+				jtm.addCallback(new PutFileCheckCallback());
+
+				jtm.commit();
+			} catch (JobMasterNotFound e) {
+				m_log.warn("addFileCheck() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				if (jtm != null) {
+					jtm.rollback();
+				}
+			} finally {
+				if (jtm != null) {
+					jtm.close();
+				}
+			}
 		} finally {
-			jtm.close();
+			JobKickCache.writeUnlock();
 		}
 		return ret;
 	}
@@ -3101,45 +3125,70 @@ public class JobControllerBean implements CheckFacility {
 		JobFileCheck ret = null;
 		// 最終変更ユーザを設定
 		String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
-		// DBにスケジュール情報を保存
+		SelectJobKick select = new SelectJobKick();
+
+		JobKickCache.writeLock();
 		try {
-			jtm = new JpaTransactionManager();
-			jtm.begin();
-			// 非入力だが入力チェックに必要な値を更新元の値で補完
-			SelectJobKick select = new SelectJobKick();
-			JobFileCheck pre = (JobFileCheck)select.getJobKick(info.getId(), JobKickConstant.TYPE_FILECHECK);
-			info.setOwnerRoleId(pre.getOwnerRoleId());
+			try {
+				jtm = new JpaTransactionManager();
+				jtm.begin();
+				// 非入力だが入力チェックに必要な値を更新元の値で補完
+				JobFileCheck pre = (JobFileCheck)select.getJobKick(info.getId(), JobKickConstant.TYPE_FILECHECK);
+				info.setOwnerRoleId(pre.getOwnerRoleId());
 
-			// 入力チェック
-			JobValidator.validateJobFileCheck(info);
-			ModifyJobKick modify = new ModifyJobKick();
-			modify.modifyJobKick(info, loginUser, JobKickConstant.TYPE_FILECHECK);
-			
-			// ファイルチェック実行契機再取得のコールバック化
-			jtm.addCallback(new PutFileCheckCallback());
-			
-			jtm.commit();
-			clearJobKickCache();
-
-			ret = (JobFileCheck)select.getJobKick(info.getId(), JobKickConstant.TYPE_FILECHECK);
-		} catch (HinemosUnknown | InvalidSetting | JobInfoNotFound | InvalidRole | JobMasterNotFound e) {
-			if (jtm != null){
-				jtm.rollback();
+				// 入力チェック
+				JobValidator.validateJobFileCheck(info);
+				// DBにファイルチェック情報を保存
+				ModifyJobKick modify = new ModifyJobKick();
+				modify.modifyJobKick(info, loginUser, JobKickConstant.TYPE_FILECHECK);
+				jtm.commit();
+			} catch (HinemosUnknown | InvalidSetting | JobInfoNotFound | InvalidRole | JobMasterNotFound e) {
+				if (jtm != null){
+					jtm.rollback();
+				}
+				throw e;
+			} catch (ObjectPrivilege_InvalidRole e) {
+				if (jtm != null) {
+					jtm.rollback();
+				}
+				throw new InvalidRole(e.getMessage(), e);
+			} catch (Exception e) {
+				m_log.warn("modifyFileCheck() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				if (jtm != null) {
+					jtm.rollback();
+				}
+				throw new HinemosUnknown(e.getMessage(), e);
+			} finally {
+				if (jtm != null) {
+					jtm.close();
+				}
 			}
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
-				jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e) {
-			m_log.warn("modifyFileCheck() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
-				jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
+
+			try {
+				jtm = new JpaTransactionManager();
+				jtm.begin();
+				// 取得し直してキャッシュに登録
+				JobKick jobKick = select.getJobKick(info.getId(), JobKickConstant.TYPE_FILECHECK);
+				JobKickCache.put(jobKick);
+				ret = (JobFileCheck)jobKick;
+
+				// エージェントへのファイルチェック実行契機再取得指示のコールバック登録
+				jtm.addCallback(new PutFileCheckCallback());
+
+				jtm.commit();
+			} catch (JobMasterNotFound e) {
+				m_log.warn("modifyFileCheck() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				if (jtm != null){
+					jtm.rollback();
+				}
+			} finally {
+				if (jtm != null) {
+					jtm.close();
+				}
+			}
 		} finally {
-			if (jtm != null)
-				jtm.close();
+			JobKickCache.writeUnlock();
 		}
 		return ret;
 	}
@@ -3310,39 +3359,54 @@ public class JobControllerBean implements CheckFacility {
 	 */
 	public List<JobFileCheck> deleteFileCheck(List<String> jobkickIdList) throws HinemosUnknown, JobInfoNotFound, InvalidRole, JobMasterNotFound {
 		m_log.debug("deleteFileCheck() : jobkickId=" + jobkickIdList);
+
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		List<JobFileCheck> ret = new ArrayList<>();
-		// DBのファイルチェック情報を削除
+		JobKickCache.writeLock();
 		try {
-			jtm.begin();
-			for(String jobkickId : jobkickIdList) {
+			try {
+				jtm.begin();
 				SelectJobKick select = new SelectJobKick();
-				JobFileCheck info = (JobFileCheck)select.getJobKick(jobkickId, JobKickConstant.TYPE_FILECHECK);
-
 				ModifyJobKick modify = new ModifyJobKick();
-				modify.deleteJobKick(jobkickId, JobKickConstant.TYPE_FILECHECK);
-				ret.add(info);
+				for (String jobkickId : jobkickIdList) {
+					JobFileCheck info = (JobFileCheck)select.getJobKick(jobkickId, JobKickConstant.TYPE_FILECHECK);
+
+					// DBのファイルチェック情報を削除
+					modify.deleteJobKick(jobkickId, JobKickConstant.TYPE_FILECHECK);
+					ret.add(info);
+				}
+				jtm.commit();
+			} catch (HinemosUnknown | JobInfoNotFound | JobMasterNotFound e) {
+				jtm.rollback();
+				throw e;
+			} catch (ObjectPrivilege_InvalidRole e) {
+				jtm.rollback();
+				throw new InvalidRole(e.getMessage(), e);
+			} catch (Exception e) {
+				m_log.warn("deleteFileCheck() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				jtm.rollback();
+				throw new HinemosUnknown(e.getMessage(), e);
+			} finally {
+				jtm.close();
 			}
-			
-			// ファイルチェック実行契機再取得のコールバック化
-			jtm.addCallback(new PutFileCheckCallback());
-			
-			jtm.commit();
-			clearJobKickCache();
-			
-		} catch (HinemosUnknown | JobInfoNotFound | JobMasterNotFound e) {
-			jtm.rollback();
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
-			jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e) {
-			m_log.warn("deleteFileCheck() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
+
+			try {
+				jtm = new JpaTransactionManager();
+				jtm.begin();
+				// キャッシュからも削除
+				JobKickCache.removeByList(jobkickIdList);
+
+				// エージェントへのファイルチェック実行契機再取得指示のコールバック登録
+				jtm.addCallback(new PutFileCheckCallback());
+
+				jtm.commit();
+			} finally {
+				if (jtm != null) {
+					jtm.close();
+				}
+			}
 		} finally {
-			jtm.close();
+			JobKickCache.writeUnlock();
 		}
 		return ret;
 	}
@@ -3447,34 +3511,64 @@ public class JobControllerBean implements CheckFacility {
 		m_log.debug("deleteJobKick() : jobkickId=" + jobkickIdList);
 		JpaTransactionManager jtm = new JpaTransactionManager();
 		List<JobKick> ret = new ArrayList<>();
-		// DBのファイルチェック情報を削除
+		JobKickCache.writeLock();
 		try {
-			jtm.begin();
-			for(String jobkickId : jobkickIdList) {
+			List<String> fileCheckIdList = new ArrayList<>();
+			try {
+				jtm.begin();
 				SelectJobKick select = new SelectJobKick();
-				JobKick info = select.getJobKick(jobkickId, null);
-
 				ModifyJobKick modify = new ModifyJobKick();
-				modify.deleteJobKick(jobkickId, info.getType());
-				ret.add(info);
+				for(String jobkickId : jobkickIdList) {
+					JobKick info = select.getJobKick(jobkickId, null);
+					// エージェントへの指示とキャッシュ更新のためファイルチェックのIDを記録
+					if (info.getType() == JobKickConstant.TYPE_FILECHECK) {
+						fileCheckIdList.add(jobkickId);
+					}
+
+					// DBの実行契機情報を削除
+					modify.deleteJobKick(jobkickId, info.getType());
+					ret.add(info);
+				}
+				jtm.commit();
+			} catch (HinemosUnknown | JobInfoNotFound | JobMasterNotFound e) {
+				jtm.rollback();
+				throw e;
+			} catch (ObjectPrivilege_InvalidRole e) {
+				jtm.rollback();
+				throw new InvalidRole(e.getMessage(), e);
+			} catch (Exception e) {
+				m_log.warn("deleteJobKick() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				jtm.rollback();
+				throw new HinemosUnknown(e.getMessage(), e);
+			} finally {
+				jtm.close();
 			}
-			jtm.commit();
-		} catch (HinemosUnknown | JobInfoNotFound | JobMasterNotFound e) {
-			jtm.rollback();
-			throw e;
-		} catch (ObjectPrivilege_InvalidRole e) {
-			jtm.rollback();
-			throw new InvalidRole(e.getMessage(), e);
-		} catch (Exception e) {
-			m_log.warn("deleteJobKick() : "
-					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			jtm.rollback();
-			throw new HinemosUnknown(e.getMessage(), e);
+			// ファイルチェック実行契機がなければ終了
+			if (fileCheckIdList.isEmpty()) {
+				return ret;
+			}
+			try {
+				jtm = new JpaTransactionManager();
+				jtm.begin();
+				// キャッシュからも削除
+				JobKickCache.removeByList(fileCheckIdList);
+
+				// エージェントへのファイルチェック実行契機再取得指示のコールバック登録
+				jtm.addCallback(new PutFileCheckCallback());
+
+				jtm.commit();
+			} finally {
+				if (jtm != null) {
+					jtm.close();
+				}
+			}
 		} finally {
-			jtm.close();
+			JobKickCache.writeUnlock();
 		}
 		return ret;
 	}
+
 	/**
 	 * ジョブ[実行契機]一覧情報を返します。<BR>
 	 *
@@ -3696,56 +3790,6 @@ public class JobControllerBean implements CheckFacility {
 		return jobKick;
 	}
 
-	private static final ILock _lock;
-	
-	@SuppressWarnings("unchecked")
-	private static ArrayList<JobKick> getJobKickCache() {
-		ICacheManager cm = CacheManagerFactory.instance().create();
-		Serializable cache = cm.get(AbstractCacheManager.KEY_JOB_KICK);
-		if (m_log.isDebugEnabled()) m_log.debug("get cache " + AbstractCacheManager.KEY_JOB_KICK + " : " + cache);
-		return cache == null ? null : (ArrayList<JobKick>)cache;
-	}
-	
-	private static void storeJobKickCache(ArrayList<JobKick> newCache) {
-		ICacheManager cm = CacheManagerFactory.instance().create();
-		if (m_log.isDebugEnabled()) m_log.debug("store cache " + AbstractCacheManager.KEY_JOB_KICK + " : " + newCache);
-		cm.store(AbstractCacheManager.KEY_JOB_KICK, newCache);
-	}
-	
-	private static void removeJobKickCache() {
-		ICacheManager cm = CacheManagerFactory.instance().create();
-		if (m_log.isDebugEnabled()) m_log.debug("remove cache " + AbstractCacheManager.KEY_JOB_KICK);
-		cm.remove(AbstractCacheManager.KEY_JOB_KICK);
-	}
-	
-	static {
-		ILockManager lockManager = LockManagerFactory.instance().create();
-		_lock = lockManager.create(JobControllerBean.class.getName());
-		
-		try {
-			_lock.writeLock();
-			
-			List<JobKick> jobKickCache = getJobKickCache();
-			if (jobKickCache == null) {	// not null when clustered
-				removeJobKickCache();
-			}
-		} finally {
-			_lock.writeUnlock();
-		}
-	}
-
-	public static void clearJobKickCache () {
-		m_log.info("clearJobKickCache()");
-		
-		try {
-			_lock.writeLock();
-			
-			removeJobKickCache();
-		} finally {
-			_lock.writeUnlock();
-		}
-	}
-	
 	/**
 	 *
 	 * <注意！> このメソッドはAgentユーザ以外で呼び出さないこと！
@@ -3763,85 +3807,68 @@ public class JobControllerBean implements CheckFacility {
 			throws JobMasterNotFound, InvalidRole, HinemosUnknown {
 		m_log.debug("getJobFileCheck for Agent");
 
-		ArrayList<JobFileCheck> ret = new ArrayList<JobFileCheck>();
-		JobControllerBean bean = new JobControllerBean();
-
-		ArrayList<JobKick> jobKickList = null;
-		JpaTransactionManager jtm = new JpaTransactionManager();
-		try {
-			jtm.begin();
-			
-			try {
-				_lock.readLock();
-			
-				List<JobKick> jobKickCache = getJobKickCache();
-				if (jobKickCache != null) {
-					jobKickList = new ArrayList<JobKick>(jobKickCache);
-				}
-			} finally {
-				_lock.readUnlock();
-			}
-		
-			if (jobKickList == null) {
-				try {
-					_lock.writeLock();
-				
-					long startTime = System.currentTimeMillis();
-					jtm.getEntityManager().clear();
-					jobKickList = bean.getJobKickList();
-					storeJobKickCache(jobKickList);
-					
-					m_log.info("refresh jobKickCache " + (System.currentTimeMillis() - startTime) +
-							"ms. size=" + jobKickList.size());
-				} finally {
-					_lock.writeUnlock();
-				}
-			}
-
-			for (JobKick jobKick : jobKickList) {
-				// タイプがスケジュールではなく、ファイルチェックであることを確認。
-				int type = jobKick.getType();
-				if (type != JobKickConstant.TYPE_FILECHECK) {
-					continue;
-				}
-				
-				if (!(jobKick instanceof JobFileCheck)) {
-					// ここには到達しないはず
-					m_log.warn("getJobFileCheck() : the setting is not JobFileCheck. jobKickId=" + jobKick.getId());
-					continue;
-				}
-				
-				JobFileCheck jobFileCheck = (JobFileCheck)jobKick;
-
-				// ファイルチェック対象のファシリティIDであることを確認。
-				boolean flag = false;
-				for (String facilityId : facilityIdList) {
-					if(new RepositoryControllerBean().containsFaciliyId(jobFileCheck.getFacilityId(), facilityId, jobFileCheck.getOwnerRoleId())) {
-						flag = true;
-						break;
-					}
-				}
-				if (!flag) {
-					continue;
-				}
-
-				// カレンダを作成
-				String calendarId = jobFileCheck.getCalendarId();
-				CalendarInfo calendarInfo = null;
-				try {
-					calendarInfo = new CalendarControllerBean().getCalendarFull(calendarId);
-				} catch (CalendarNotFound e) {
-					m_log.warn("CalendarNotFound " + e.getMessage() + " id=" + calendarId);
-				}
-				jobFileCheck.setCalendarInfo(calendarInfo);
-				ret.add(jobFileCheck);
-			}
-			
-			jtm.commit();
-		} finally {
-			jtm.close();
+		long startTime = 0;
+		if (m_log.isDebugEnabled()) {
+			startTime = System.currentTimeMillis();
+			m_log.debug("getJobFileCheck() start. time(ms): start=" + startTime);
 		}
 
+		ArrayList<JobFileCheck> ret = new ArrayList<JobFileCheck>();
+		List<JobKick> jobKickList = null;
+
+		JobKickCache.writeLock();
+		try {
+			// 一覧取得時にキャッシュ初期化が行われる可能性があるため、ロック取得
+			jobKickList = JobKickCache.getAsList();
+		} finally {
+			JobKickCache.writeUnlock();
+		}
+
+		for (JobKick jobKick : jobKickList) {
+			// タイプがスケジュールではなく、ファイルチェックであることを確認。
+			int type = jobKick.getType();
+			if (type != JobKickConstant.TYPE_FILECHECK) {
+				// キャッシュ時にフィルタリングしているため、ここには到達しないはず
+				continue;
+			}
+
+			if (!(jobKick instanceof JobFileCheck)) {
+				// キャッシュ時にフィルタリングしているため、ここには到達しないはず
+				m_log.warn("getJobFileCheck() : the setting is not JobFileCheck. jobKickId=" + jobKick.getId());
+				continue;
+			}
+
+			JobFileCheck jobFileCheck = (JobFileCheck) jobKick;
+
+			// ファイルチェック対象のファシリティIDであることを確認。
+			boolean flag = false;
+			for (String facilityId : facilityIdList) {
+				if(new RepositoryControllerBean().containsFaciliyId(jobFileCheck.getFacilityId(), facilityId, jobFileCheck.getOwnerRoleId())) {
+					flag = true;
+					break;
+				}
+			}
+			if (!flag) {
+				continue;
+			}
+
+			// カレンダを作成
+			String calendarId = jobFileCheck.getCalendarId();
+			CalendarInfo calendarInfo = null;
+			try {
+				calendarInfo = new CalendarControllerBean().getCalendarFull(calendarId);
+			} catch (CalendarNotFound e) {
+				m_log.warn("CalendarNotFound " + e.getMessage() + " id=" + calendarId);
+			}
+			jobFileCheck.setCalendarInfo(calendarInfo);
+			ret.add(jobFileCheck);
+		}
+
+		if (m_log.isDebugEnabled()) {
+			long endTime = System.currentTimeMillis();
+			long elapsedTime = endTime - startTime;
+			m_log.debug("getJobFileCheck() end. time(ms): end=" + endTime + ", elapsed=" + elapsedTime);
+		}
 		return ret;
 	}
 
@@ -3869,79 +3896,166 @@ public class JobControllerBean implements CheckFacility {
 			throw e;
 		}
 
+		List<String> fileCheckIdList = new ArrayList<>();
 		try{
 			jtm = new JpaTransactionManager();
-			jtm.begin(true);//コミット後にコミット完了を前提とした キャッシュの更新とトピックの送信をおこなっている。
-			boolean updateFileCheck = false;
-			for(String jobkickId: jobkickIds){
-				JobKick jobKick = null;
-				SelectJobKick select = new SelectJobKick();
-				//ジョブ[実行契機]一覧からIDと一致するスケジュール情報または、ファイルチェック情報を取得する
-				jobKick = select.getJobKick(jobkickId, null);
-				//有効無効切り替え
-				if(validFlag){
-					jobKick.setValid(true);
-				}
-				else{
-					jobKick.setValid(false);
-				}
-				if(jobKick.getType() == JobKickConstant.TYPE_SCHEDULE){
+			jtm.begin();
+
+			SelectJobKick select = new SelectJobKick();
+			for(String jobkickId: jobkickIds) {
+				// ジョブ[実行契機]一覧からIDと一致する実行契機情報を取得する
+				JobKick jobKick = select.getJobKick(jobkickId, null);
+
+				if (jobKick.getType() == JobKickConstant.TYPE_FILECHECK) {
+					// ファイルチェック実行契機の場合、Javaロック→トランザクション開始の順で処理する必要がある
+					// ここでは変更を行わず、後で処理するためにリストに保持
+					fileCheckIdList.add(jobkickId);
+				} else if (jobKick.getType() == JobKickConstant.TYPE_MANUAL) {
+					// マニュアル実行契機の場合
+					// 有効/無効の切り替えを行わない。
+					m_log.info("setJobKickStatus() JobManual does not change Valid : "
+							+ " jobkickId= " + jobkickId
+							+ " valid=" + jobKick.isValid());
+					ret.add(jobKick);
+				} else if(jobKick.getType() == JobKickConstant.TYPE_SCHEDULE){
 					//スケジュールの場合
+					if(validFlag){
+						jobKick.setValid(true);
+					}
+					else{
+						jobKick.setValid(false);
+					}
 					JobSchedule jobSchedule = (JobSchedule) jobKick;
 					m_log.info("setJobKickStatus() JobSchedule Change Valid : "
 							+ " jobkickId= " + jobkickId
 							+ " valid=" + jobSchedule.isValid());
 					modifySchedule(jobSchedule);
-				} else if (jobKick.getType() == JobKickConstant.TYPE_FILECHECK){
-					//ファイルチェックの場合
-					JobFileCheck jobFileCheck = (JobFileCheck) jobKick;
-					m_log.info("setJobKickStatus() JobFileCheck Change Valid : "
-							+ " jobkickId= " + jobkickId
-							+ " valid=" + jobFileCheck.isValid());
-					modifyFileCheck(jobFileCheck);
-					updateFileCheck = true;
-				} else if (jobKick.getType() == JobKickConstant.TYPE_MANUAL){
-					//マニュアル実行契機の場合
-					//有効/無効の切り替えを行わない。
-					m_log.info("setJobKickStatus() JobManual does not change Valid : "
-							+ " jobkickId= " + jobkickId
-							+ " valid=" + jobKick.isValid());
+					ret.add(jobKick);
 				} else if (jobKick.getType() == JobKickConstant.TYPE_JOBLINKRCV){
 					//ジョブ連携受信の場合
+					if(validFlag){
+						jobKick.setValid(true);
+					}
+					else{
+						jobKick.setValid(false);
+					}
 					JobLinkRcv jobLinkRcv = (JobLinkRcv) jobKick;
 					m_log.info("setJobKickStatus() JobLinkRcv Change Valid : "
 							+ " jobkickId= " + jobkickId
 							+ " valid=" + jobLinkRcv.isValid());
 					modifyJobLinkRcv(jobLinkRcv);
-					updateFileCheck = true;
+					ret.add(jobKick);
 				} else {
 					m_log.warn("unknown type " + jobKick.getType());
 				}
-				ret.add(jobKick);
 			}
 			jtm.commit();
-			if (updateFileCheck) {
-				clearJobKickCache();
-				SendTopic.putFileCheck(null);
-			}
 		} catch (HinemosUnknown | JobMasterNotFound | JobInfoNotFound | InvalidSetting | InvalidRole e) {
 			if (jtm != null){
 				jtm.rollback();
 			}
 			throw e;
 		} catch (ObjectPrivilege_InvalidRole e) {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new InvalidRole(e.getMessage(), e);
 		} catch (Exception e) {
 			m_log.warn("setJobKickStatus() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.rollback();
+			}
 			throw new HinemosUnknown(e.getMessage(), e);
 		} finally {
-			if (jtm != null)
+			if (jtm != null) {
 				jtm.close();
+			}
+		}
+
+		if (fileCheckIdList.isEmpty()) {
+			return ret;
+		}
+		// 本コードに到達するケースはファイルチェック実行契機のみ
+		JobKick jobKick = null;
+		JobKickCache.writeLock();
+		try {
+			SelectJobKick select = new SelectJobKick();
+			try{
+				jtm = new JpaTransactionManager();
+				jtm.begin();
+
+				ModifyJobKick modify = new ModifyJobKick();
+				for(String jobkickId: fileCheckIdList) {
+					//ジョブ[実行契機]一覧からIDと一致する実行契機情報を取得する
+					jobKick = select.getJobKick(jobkickId, null);
+
+					if (jobKick.getType() == JobKickConstant.TYPE_FILECHECK) {
+						//有効無効切り替え
+						if(validFlag){
+							jobKick.setValid(true);
+						}
+						else{
+							jobKick.setValid(false);
+						}
+						JobFileCheck jobFileCheck = (JobFileCheck) jobKick;
+						m_log.info("setJobKickStatus() JobFileCheck Change Valid : "
+								+ " jobkickId= " + jobkickId
+								+ " valid=" + jobFileCheck.isValid());
+						// 最終変更ユーザを設定
+						String loginUser = (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID);
+						// DBにファイルチェック情報を保存
+						modify.modifyJobKick(jobFileCheck, loginUser, JobKickConstant.TYPE_FILECHECK);
+						ret.add(jobKick);
+					}
+				}
+				jtm.commit();
+			} catch (HinemosUnknown | JobMasterNotFound | JobInfoNotFound | InvalidRole e) {
+				if (jtm != null){
+					jtm.rollback();
+				}
+				throw e;
+			} catch (ObjectPrivilege_InvalidRole e) {
+				if (jtm != null) {
+					jtm.rollback();
+				}
+				throw new InvalidRole(e.getMessage(), e);
+			} catch (Exception e) {
+				m_log.warn("setJobKickStatus() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				if (jtm != null) {
+					jtm.rollback();
+				}
+				throw new HinemosUnknown(e.getMessage(), e);
+			} finally {
+				if (jtm != null) {
+					jtm.close();
+				}
+			}
+			try {
+				jtm = new JpaTransactionManager();
+				jtm.begin();
+				for(String jobkickId: fileCheckIdList) {
+					// 取得し直してキャッシュに登録
+					JobKickCache.put(select.getJobKick(jobkickId, JobKickConstant.TYPE_FILECHECK));
+				}
+
+				// エージェントへのファイルチェック実行契機再取得指示のコールバック登録
+				jtm.addCallback(new PutFileCheckCallback());
+
+				jtm.commit();
+			} catch (JobMasterNotFound e) {
+				m_log.warn("setJobKickStatus() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+				if (jtm != null){
+					jtm.rollback();
+				}
+			} finally {
+				if (jtm != null) {
+					jtm.close();
+				}
+			}
+		} finally {
+			JobKickCache.writeUnlock();
 		}
 		return ret;
 	}
@@ -6195,7 +6309,7 @@ public class JobControllerBean implements CheckFacility {
 	 * @throws InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public RpaJobScreenshot getJobRpaScreenshot(String sessionId, String jobunitId, String jobId, String facilityId, Long regDate) throws InvalidRole, HinemosUnknown{
+	public RpaJobScreenshot getJobRpaScreenshot(String sessionId, String jobunitId, String jobId, String facilityId, Long regDate) throws InvalidRole, JobRpaScreenshotFileNotFound, HinemosUnknown{
 		m_log.debug("getJobRpaScreenshot()");
 
 		JpaTransactionManager jtm = new JpaTransactionManager();
@@ -6206,6 +6320,9 @@ public class JobControllerBean implements CheckFacility {
 		} catch (ObjectPrivilege_InvalidRole e) {
 			jtm.rollback();
 			throw new InvalidRole(e.getMessage(), e);
+		} catch (JobRpaScreenshotFileNotFound e) {
+			jtm.rollback();
+			throw e;
 		} catch (Exception e) {
 			m_log.warn("getJobRpaScreenshot() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);

@@ -19,8 +19,10 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.InternalIdCommon;
 import com.clustercontrol.commons.util.JpaTransactionManager;
+import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.selfcheck.TableSizeConfig;
 import com.clustercontrol.selfcheck.util.TableSizeQueryExecuter;
+import com.clustercontrol.util.MessageConstant;
 import com.clustercontrol.util.apllog.AplLogger;
 
 /**
@@ -43,6 +45,14 @@ public class TableSizeMonitor extends SelfCheckMonitorBase {
 	}
 
 	/**
+	 * セルフチェック処理名
+	 */
+	@Override
+	public String toString() {
+		return MessageConstant.SELFCHECK_TYPE_TABLE_SIZE.getMessage();
+	}
+
+	/**
 	 * 監視項目ID
 	 */
 	@Override
@@ -52,9 +62,10 @@ public class TableSizeMonitor extends SelfCheckMonitorBase {
 
 	/**
 	 * テーブルのサイズチェック処理
+	 * @throws Exception 
 	 */
 	@Override
-	public void execute() {
+	public void execute() throws InvalidSetting {
 		if (!HinemosPropertyCommon.selfcheck_monitoring_table_size.getBooleanValue()) {
 			m_log.debug("skip");
 			return;
@@ -117,47 +128,48 @@ public class TableSizeMonitor extends SelfCheckMonitorBase {
 					size = getTableCount(tableName);
 					break;
 				default :
-					m_log.info("monitoring type is invalid. (type = " + thresholdType + ")");
+					String message = "monitoring type is invalid. (type = " + thresholdType + ")";
+					m_log.info(message);
+					throw new InvalidSetting(message);
 				}
 	
-				if (size == -1) {
-					if (m_log.isInfoEnabled()) {
-						m_log.info("skipped monitoring table. (tableName=" + tableName + ", threshold=" + thresholdOrig + " [" + getThresholdUnit(thresholdType) + "])");
-					}
-				} else if (size <= sizeThresdhold) {
+				if (size <= sizeThresdhold) {
 					if (m_log.isDebugEnabled()) {
 						m_log.debug("table's size is low. (tableName=" + tableName + ", size=" + size + ", threshold=" + thresholdOrig + " [" + getThresholdUnit(thresholdType) + "])");
 					}
 	
 					warn = false;
 				}
+	
+				if (warn) {
+					m_log.info("log table's size is too high. (tableName=" + tableName + ", size=" + size
+							+ ", threshold=" + thresholdOrig + " " + getThresholdUnit(thresholdType) + ")");
+				}
+				if (!isNotify(subKey, warn)) {
+					continue;
+				}
+				switch (thresholdType) {
+				case MBYTE:
+					physicalSize = size;
+					count = getTableCount(tableName);
+					break;
+				case COUNT:
+					physicalSize = getTableSize(tableName);
+					count = size;
+					break;
+				default:
+					// 1回目のチェックで引っ掛かるので通常ここに到達することはない
+					m_log.info("monitoring type is invalid. (type=" + thresholdType + ")");
+				}
 			} catch (Exception e) {
 				if (tm != null)
 					tm.rollback();
 				m_log.warn("monitoring log table failure. (tableName=" + tableName + ", threshold=" + threshold + " [" + getThresholdUnit(thresholdType) + "])", e);
+				throw e;
 			} finally {
 				if (tm != null) {
 					tm.close();
 				}
-			}
-	
-			if (warn) {
-				m_log.info("log table's size is too high. (tableName=" + tableName + ", size=" + size + ", threshold=" + thresholdOrig + " " + getThresholdUnit(thresholdType) + ")");
-			}
-			if (!isNotify(subKey, warn)) {
-				continue;
-			}
-			switch (thresholdType) {
-			case MBYTE :
-				physicalSize = size;
-				count = getTableCount(tableName);
-				break;
-			case COUNT :
-				physicalSize = getTableSize(tableName);
-				count = size;
-				break;
-			default :
-				m_log.info("monitoring type is invalid. (type=" + thresholdType + ")");
 			}
 			physicalSizeMByte = physicalSize / 1024.0 / 1024.0;
 	
@@ -192,8 +204,9 @@ public class TableSizeMonitor extends SelfCheckMonitorBase {
 	 * 特定のテーブルのレコード数（統計情報から取得した概算値）を返すメソッド
 	 * @param tableName 対象とするテーブル名（スキーマ.テーブルの形式でなくてはならない）
 	 * @return レコード数
+	 * @throws InvalidSetting 
 	 */
-	public static long getTableCount(String tableName) {
+	public static long getTableCount(String tableName) throws InvalidSetting {
 		return TableSizeQueryExecuter.getTableCount(tableName);
 	}
 

@@ -28,5 +28,7 @@ public class ScopeFigure extends FacilityFigure {
 				" : " + getFacilityElementProperty("FacilityId"));
 		addTooltip(com.clustercontrol.nodemap.messages.Messages.getString("tooltip.description") +
 				" : " + getFacilityElementProperty("Description"));
+		// レイアウトを再計算し適切なサイズで表示されるようにする
+		super.getTooltip().validate();
 	}
 }

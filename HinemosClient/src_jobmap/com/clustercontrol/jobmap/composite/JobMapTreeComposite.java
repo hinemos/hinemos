@@ -248,6 +248,14 @@ public class JobMapTreeComposite extends JobTreeComposite {
 			@Override
 			public void dragStart(DragSourceEvent event) {
 				JobMapEditorView editorView = JobMapActionUtil.getJobMapEditorView();
+				// ジョブマップが表示されていない、もしくはドラッグ対象が存在しない場合、処理が不要なため終了する
+				if (editorView.getFocusFigure() == null || m_selectItem == null) {
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("dragStart : focusJobFigure or m_selectItem is null.");
+					}
+					event.doit = false;
+					return;
+				}
 				JobTreeItemWrapper dispItem = editorView.getFocusFigure().getJobTreeItem();
 				JobEditState jobEditState = JobEditStateUtil.getJobEditState(JobTreeItemUtil.getManagerName(dispItem));
 				boolean readOnly = jobEditState.isLockedJobunitId(dispItem.getData().getJobunitId());
@@ -258,6 +266,14 @@ public class JobMapTreeComposite extends JobTreeComposite {
 			}
 			@Override
 			public void dragSetData(DragSourceEvent event) {
+				// ドラッグ対象が存在しない場合、処理が不要なため終了する
+				if (m_selectItem == null) {
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("dragSetData : m_selectItem is null.");
+					}
+					event.doit = false;
+					return;
+				}
 				event.data = m_selectItem.getData().getJobunitId() 
 						+ "," + m_selectItem.getData().getId() 
 						+ "," + JobTreeItemUtil.getManagerName(m_selectItem);

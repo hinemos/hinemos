@@ -239,28 +239,40 @@ public class JobListComposite extends Composite {
 
 				if (items.get(i).getData().getType() == JobInfoWrapper.TypeEnum.JOB) {
 					JobCommandInfoResponse info = items.get(i).getData().getCommand();
-					line.add(info.getFacilityID());
-					line.add(HinemosMessage.replace(info.getScope()));
-				} else if (items.get(i).getData().getType() ==  JobInfoWrapper.TypeEnum.MONITORJOB) {
+					if (info != null) {
+						line.add(info.getFacilityID());
+						line.add(HinemosMessage.replace(info.getScope()));
+					}
+				} else if (items.get(i).getData().getType() == JobInfoWrapper.TypeEnum.MONITORJOB) {
 					JobMonitorInfoResponse info = items.get(i).getData().getMonitor();
-					line.add(info.getFacilityID());
-					line.add(HinemosMessage.replace(info.getScope()));
-				} else if (items.get(i).getData().getType() ==  JobInfoWrapper.TypeEnum.FILECHECKJOB) {
+					if (info != null) {
+						line.add(info.getFacilityID());
+						line.add(HinemosMessage.replace(info.getScope()));
+					}
+				} else if (items.get(i).getData().getType() == JobInfoWrapper.TypeEnum.FILECHECKJOB) {
 					JobFileCheckInfoResponse info = items.get(i).getData().getJobFileCheck();
-					line.add(info.getFacilityID());
-					line.add(HinemosMessage.replace(info.getScope()));
-				} else if (items.get(i).getData().getType() ==  JobInfoWrapper.TypeEnum.RESOURCEJOB) {
+					if (info != null) {
+						line.add(info.getFacilityID());
+						line.add(HinemosMessage.replace(info.getScope()));
+					}
+				} else if (items.get(i).getData().getType() == JobInfoWrapper.TypeEnum.RESOURCEJOB) {
 					JobResourceInfoResponse info = items.get(i).getData().getResource();
-					line.add(info.getResourceNotifyScope());
-					line.add(HinemosMessage.replace(info.getResourceNotifyScopePath()));
-				} else if (items.get(i).getData().getType() ==  JobInfoWrapper.TypeEnum.JOBLINKRCVJOB) {
+					if (info != null) {
+						line.add(info.getResourceNotifyScope());
+						line.add(HinemosMessage.replace(info.getResourceNotifyScopePath()));
+					}
+				} else if (items.get(i).getData().getType() == JobInfoWrapper.TypeEnum.JOBLINKRCVJOB) {
 					JobLinkRcvInfoResponse info = items.get(i).getData().getJobLinkRcv();
-					line.add(info.getFacilityID());
-					line.add(HinemosMessage.replace(info.getScope()));
-				} else if (items.get(i).getData().getType() ==  JobInfoWrapper.TypeEnum.RPAJOB) {
+					if (info != null) {
+						line.add(info.getFacilityID());
+						line.add(HinemosMessage.replace(info.getScope()));
+					}
+				} else if (items.get(i).getData().getType() == JobInfoWrapper.TypeEnum.RPAJOB) {
 					JobRpaInfoResponse info = items.get(i).getData().getRpa();
-					line.add(info.getFacilityID());
-					line.add(HinemosMessage.replace(info.getScope()));
+					if (info != null) {
+						line.add(info.getFacilityID());
+						line.add(HinemosMessage.replace(info.getScope()));
+					}
 				} else {
 					line.add(null);
 					line.add(null);

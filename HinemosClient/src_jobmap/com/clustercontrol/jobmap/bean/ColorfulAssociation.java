@@ -78,6 +78,8 @@ public class ColorfulAssociation extends Association {
 			tooltip.add(subPanel);
 		}
 
+		// レイアウトを再計算し適切なサイズで表示されるようにする
+		tooltip.validate();
 		return tooltip;
 	}
 

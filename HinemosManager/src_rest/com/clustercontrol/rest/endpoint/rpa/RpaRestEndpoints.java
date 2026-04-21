@@ -52,7 +52,6 @@ import org.glassfish.grizzly.http.server.Request;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
-import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
@@ -883,9 +882,6 @@ public class RpaRestEndpoints {
 	public Response getRpaSinarioTagList(@QueryParam(value = "ownerRoleId") String ownerRoleId, 
 			@Context Request request, @Context UriInfo uriInfo) throws HinemosUnknown, RpaScenarioTagNotFound, InvalidUserPass, InvalidRole {
 		m_log.info("call getRpaSinarioTagList()");
-		
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 		
 		List<RpaScenarioTag> infoResList = new RpaControllerBean().getRpaScenarioTagListByOwnerRole(ownerRoleId);
 		

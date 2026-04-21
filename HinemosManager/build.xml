@@ -141,8 +141,8 @@
 			destdir="${build.dir}/${class.dir}"
 			failonerror="true"
 			classpathref="id.compile.classpath.local"
-			source="${compile.version.manager}"
-			target="${compile.version.manager}"
+			source="${compile.version.base}"
+			target="${compile.version.base}"
 			encoding="${compile.encode}"
 			includeantruntime="false"
 			debug="on">
@@ -624,7 +624,7 @@
 			</fileset>
 		</copy>
 
-		<javac destdir="${war.dir}/${class.dir}" failonerror="true" classpathref="id.compile.classpath.local" source="${compile.version.manager}" target="${compile.version.manager}" encoding="${compile.encode}" includeantruntime="false" debug="on">
+		<javac destdir="${war.dir}/${class.dir}" failonerror="true" classpathref="id.compile.classpath.local" source="${compile.version.base}" target="${compile.version.base}" encoding="${compile.encode}" includeantruntime="false" debug="on">
 			<src path="for_war" />
 		</javac>
 
@@ -1033,8 +1033,8 @@
 				destdir="@{bin.dir}"
 				failonerror="true"
 				classpathref="publish.compile.classpath"
-				source="${compile.version.manager}"
-				target="${compile.version.manager}"
+				source="${compile.version.base}"
+				target="${compile.version.base}"
 				encoding="${compile.encode}"
 				includeantruntime="false"
 				debug="on">
@@ -1053,8 +1053,42 @@
 		</sequential>
 	</macrodef>
 
+	<macrodef name="build-publish2">
+		<attribute name="bin.dir" default="${build.dir}/bin_publish_ent2" />
+		<sequential>
+			<!-- clean_classes" -->
+			<delete dir="@{bin.dir}" failonerror="true" />
+			<mkdir dir="@{bin.dir}" />
+
+			<!-- compile -->
+			<javac
+				destdir="@{bin.dir}"
+				failonerror="true"
+				classpathref="publish.compile.classpath"
+				source="${compile.version.base}"
+				target="${compile.version.base}"
+				encoding="${compile.encode}"
+				includeantruntime="false"
+				debug="on">
+				<src path="src_publish_ent" />
+				<src path="src_publish_ent2" />
+			</javac>
+
+			<!-- jar -->
+			<jar jarfile="${jar.dir}/PublishEnterprise2.jar" manifest="${build.dir}/MANIFEST.MF">
+				<fileset dir="@{bin.dir}">
+					<include name="**/*.class"/>
+				</fileset>
+				<fileset dir="src_publish_ent2">
+					<include name="META-INF/services/*" />
+				</fileset>
+			</jar>
+		</sequential>
+	</macrodef>
+
 	<target name="build_publish">
 		<build-publish src.suffix="oss" jar.suffix="OSS" />
 		<build-publish src.suffix="ent" jar.suffix="Enterprise" />
+		<build-publish2 />
 	</target>
 </project>

@@ -102,16 +102,16 @@ public class JobWaitRuleInfo implements Serializable, Cloneable, RequestDto {
 	private Integer endValue = EndStatusConstant.INITIAL_VALUE_NORMAL;
 
 	/** 排他分岐 */
-	private Boolean exclusiveBranch = false;
+	private Boolean exclusiveBranch = null;
 
 	/** 排他分岐の終了状態 */
 	@JsonDeserialize(using=EnumToConstantDeserializer.class)
 	@JsonSerialize(using=ConstantToEnumSerializer.class)
 	@EnumerateConstant(enumDto=EndStatusSelectEnum.class)
-	private Integer exclusiveBranchEndStatus = 0;
+	private Integer exclusiveBranchEndStatus = null;
 
 	/** 排他分岐の終了値 */
-	private Integer exclusiveBranchEndValue = EndStatusConstant.INITIAL_VALUE_NORMAL;
+	private Integer exclusiveBranchEndValue = null;
 
 	/** 後続ジョブ優先度 */
 	private List<JobNextJobOrderInfo> exclusiveBranchNextJobOrderList;
@@ -1490,6 +1490,15 @@ public class JobWaitRuleInfo implements Serializable, Cloneable, RequestDto {
 		if (exclusiveBranchNextJobOrderList != null) {
 			for (JobNextJobOrderInfo req : exclusiveBranchNextJobOrderList) {
 				req.correlationCheck();
+			}
+		}
+		// 排他分岐 有り以外の場合 関連項目が非設定（null）なら デフォルト値をセット（クライアント画面と同様に調整）
+		if (exclusiveBranch == null || !exclusiveBranch) {
+			if (exclusiveBranchEndStatus == null) {
+				exclusiveBranchEndStatus = EndStatusConstant.TYPE_NORMAL;
+			}
+			if (exclusiveBranchEndValue == null) {
+				exclusiveBranchEndValue= 1;
 			}
 		}
 	}

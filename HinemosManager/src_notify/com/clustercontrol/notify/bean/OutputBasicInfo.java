@@ -111,7 +111,7 @@ public class OutputBasicInfo implements java.io.Serializable, Cloneable {
 	 * 通知グループID
 	 */
 	private String notifyGroupId;
-	
+
 	/**
 	 * ジョブユニットID
 	 */
@@ -121,6 +121,11 @@ public class OutputBasicInfo implements java.io.Serializable, Cloneable {
 	 * ジョブID
 	 */
 	private String m_jobId = "";
+
+	/**
+	 * ジョブ名
+	 */
+	private String jobName = "";
 
 	/**
 	 * 判定による重要度変化のタイプ
@@ -1485,7 +1490,25 @@ public class OutputBasicInfo implements java.io.Serializable, Cloneable {
 	public void setJoblinkMessageId(String joblinkMessageId) {
         this.joblinkMessageId = joblinkMessageId;
 	}
+	
+	/**
+	 * ジョブ名を返します。
+	 * 
+	 * @return ジョブ名
+	 */
+	public String getJobName() {
+		return jobName;
+	}
 
+	/**
+	 * ジョブ名を設定します。
+	 * 
+	 * @param jobName ジョブ名
+	 */
+	public void setJobName(String jobName) {
+		this.jobName = jobName;
+	}
+	
 	@Override
 	public String toString() {
 		String str = "OutputBasicInfo ["
@@ -1518,7 +1541,11 @@ public class OutputBasicInfo implements java.io.Serializable, Cloneable {
 			clonedInfo.setNotifyGroupId(notifyGroupId);
 			clonedInfo.notifyUUID = notifyUUID;
 			clonedInfo.setPriorityChangeJudgmentType(priorityChangeJudgmentType);
-			clonedInfo.setPriorityChangeFailureType(priorityChangeFailureType);				clonedInfo.setJoblinkMessageId(joblinkMessageId);
+			clonedInfo.setPriorityChangeFailureType(priorityChangeFailureType);
+			clonedInfo.setJoblinkMessageId(joblinkMessageId);
+			clonedInfo.setJobunitId(m_jobunitId);
+			clonedInfo.setJobId(m_jobId);
+			clonedInfo.setJobName(jobName);
 			for (int i = 1; i <= EventHinemosPropertyConstant.USER_ITEM_SIZE; i++) {
 				NotifyUtil.setUserItemValue(clonedInfo, i, NotifyUtil.getUserItemValue(this, i));
 			}

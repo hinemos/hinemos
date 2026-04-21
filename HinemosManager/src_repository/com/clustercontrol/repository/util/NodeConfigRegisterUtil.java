@@ -9,7 +9,9 @@
 package com.clustercontrol.repository.util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -17,14 +19,15 @@ import org.apache.commons.logging.LogFactory;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.FacilityNotFound;
-import com.clustercontrol.repository.model.NodeCpuHistoryDetail;
 import com.clustercontrol.repository.bean.NodeConfigSettingConstant;
 import com.clustercontrol.repository.bean.NodeConfigSettingItem;
 import com.clustercontrol.repository.bean.NodeRegisterFlagConstant;
+import com.clustercontrol.repository.model.NodeCpuHistoryDetail;
 import com.clustercontrol.repository.model.NodeCpuInfo;
 import com.clustercontrol.repository.model.NodeCustomHistoryDetail;
 import com.clustercontrol.repository.model.NodeCustomInfo;
 import com.clustercontrol.repository.model.NodeCustomInfoPK;
+import com.clustercontrol.repository.model.NodeDeviceInfo;
 import com.clustercontrol.repository.model.NodeDeviceInfoPK;
 import com.clustercontrol.repository.model.NodeDiskHistoryDetail;
 import com.clustercontrol.repository.model.NodeDiskInfo;
@@ -38,9 +41,6 @@ import com.clustercontrol.repository.model.NodeLicenseInfo;
 import com.clustercontrol.repository.model.NodeLicenseInfoPK;
 import com.clustercontrol.repository.model.NodeMemoryHistoryDetail;
 import com.clustercontrol.repository.model.NodeMemoryInfo;
-import com.clustercontrol.repository.model.NodeProductHistoryDetail;
-import com.clustercontrol.repository.model.NodeProductInfo;
-import com.clustercontrol.repository.model.NodeProductInfoPK;
 import com.clustercontrol.repository.model.NodeNetstatHistoryDetail;
 import com.clustercontrol.repository.model.NodeNetstatInfo;
 import com.clustercontrol.repository.model.NodeNetstatInfoPK;
@@ -53,6 +53,9 @@ import com.clustercontrol.repository.model.NodePackageInfo;
 import com.clustercontrol.repository.model.NodePackageInfoPK;
 import com.clustercontrol.repository.model.NodeProcessInfo;
 import com.clustercontrol.repository.model.NodeProcessInfoPK;
+import com.clustercontrol.repository.model.NodeProductHistoryDetail;
+import com.clustercontrol.repository.model.NodeProductInfo;
+import com.clustercontrol.repository.model.NodeProductInfoPK;
 import com.clustercontrol.repository.model.NodeVariableHistoryDetail;
 import com.clustercontrol.repository.model.NodeVariableInfo;
 import com.clustercontrol.repository.model.NodeVariableInfoPK;
@@ -239,9 +242,11 @@ public class NodeConfigRegisterUtil {
 
 			diffInfo = new NodeConfigRegisterDiffInfo();
 
+			Map<String, Integer> deviceNameList = new HashMap<>();
 			/** 差分登録処理(新規登録、変更) */
 			List<NodeDeviceInfoPK> notDelPkList = new ArrayList<>();
 			if (list != null) {
+				list.forEach(info -> deviceNameList.put(info.getDeviceDisplayName(), deviceNameList.getOrDefault(info.getDeviceDisplayName(), 0) + 1));
 				for (NodeCpuInfo info : list) {
 					NodeCpuInfo entity = null;
 					NodeDeviceInfoPK entityPk = new NodeDeviceInfoPK(facilityId, info.getDeviceIndex(), info.getDeviceType(), info.getDeviceName());
@@ -299,6 +304,9 @@ public class NodeConfigRegisterUtil {
 					entity.setUpdateDate(registerDatetime);
 					entity.setUpdateUser(modifyUserId);
 
+					if (deviceNameList.get(info.getDeviceDisplayName()) > 1) {
+						addNotifyCallback(jtm, facilityId, info);
+					}
 					// NodeCpuHistoryDetail登録
 					NodeCpuHistoryDetail historyDetail = new NodeCpuHistoryDetail(
 							facilityId, info.getDeviceIndex(), info.getDeviceType(), info.getDeviceName(), registerDatetime);
@@ -507,9 +515,11 @@ public class NodeConfigRegisterUtil {
 
 			diffInfo = new NodeConfigRegisterDiffInfo();
 
+			Map<String, Integer> deviceNameList = new HashMap<>();
 			/** 差分登録処理(新規登録、変更) */
 			List<NodeDeviceInfoPK> notDelPkList = new ArrayList<>();
 			if (list != null) {
+				list.forEach(info -> deviceNameList.put(info.getDeviceDisplayName(), deviceNameList.getOrDefault(info.getDeviceDisplayName(), 0) + 1));
 				for (NodeNetworkInterfaceInfo info : list) {
 					NodeNetworkInterfaceInfo entity = null;
 					NodeDeviceInfoPK entityPk = new NodeDeviceInfoPK(facilityId, info.getDeviceIndex(), info.getDeviceType(), info.getDeviceName());
@@ -565,6 +575,9 @@ public class NodeConfigRegisterUtil {
 					entity.setUpdateDate(registerDatetime);
 					entity.setUpdateUser(modifyUserId);
 
+					if (deviceNameList.get(info.getDeviceDisplayName()) > 1) {
+						addNotifyCallback(jtm, facilityId, info);
+					}
 					// NodeNetworkInterfaceHistoryDetail登録
 					NodeNetworkInterfaceHistoryDetail historyDetail = new NodeNetworkInterfaceHistoryDetail(
 							facilityId, info.getDeviceIndex(), info.getDeviceType(), info.getDeviceName(), registerDatetime);
@@ -647,9 +660,11 @@ public class NodeConfigRegisterUtil {
 
 			diffInfo = new NodeConfigRegisterDiffInfo();
 
+			Map<String, Integer> deviceNameList = new HashMap<>();
 			/** 差分登録処理(新規登録、変更) */
 			List<NodeDeviceInfoPK> notDelPkList = new ArrayList<>();
 			if (list != null) {
+				list.forEach(info -> deviceNameList.put(info.getDeviceDisplayName(), deviceNameList.getOrDefault(info.getDeviceDisplayName(), 0) + 1));
 				for (NodeDiskInfo info : list) {
 					NodeDiskInfo entity = null;
 					NodeDeviceInfoPK entityPk = new NodeDeviceInfoPK(facilityId, info.getDeviceIndex(), info.getDeviceType(), info.getDeviceName());
@@ -708,6 +723,9 @@ public class NodeConfigRegisterUtil {
 					entity.setUpdateDate(registerDatetime);
 					entity.setUpdateUser(modifyUserId);
 
+					if (deviceNameList.get(info.getDeviceDisplayName()) > 1) {
+						addNotifyCallback(jtm, facilityId, info);
+					}
 					// NodeDiskHistoryDetail登録
 					NodeDiskHistoryDetail historyDetail = new NodeDiskHistoryDetail(
 							facilityId, info.getDeviceIndex(), info.getDeviceType(), info.getDeviceName(), registerDatetime);
@@ -789,9 +807,11 @@ public class NodeConfigRegisterUtil {
 
 			diffInfo = new NodeConfigRegisterDiffInfo();
 
+			Map<String, Integer> deviceNameList = new HashMap<>();
 			/** 差分登録処理(新規登録、変更) */
 			List<NodeDeviceInfoPK> notDelPkList = new ArrayList<>();
 			if (list != null) {
+				list.forEach(info -> deviceNameList.put(info.getDeviceDisplayName(), deviceNameList.getOrDefault(info.getDeviceDisplayName(), 0) + 1));
 				for (NodeFilesystemInfo info : list) {
 					NodeFilesystemInfo entity = null;
 					NodeDeviceInfoPK entityPk = new NodeDeviceInfoPK(facilityId, info.getDeviceIndex(), info.getDeviceType(), info.getDeviceName());
@@ -844,6 +864,9 @@ public class NodeConfigRegisterUtil {
 					entity.setUpdateDate(registerDatetime);
 					entity.setUpdateUser(modifyUserId);
 
+					if (deviceNameList.get(info.getDeviceDisplayName()) > 1) {
+						addNotifyCallback(jtm, facilityId, info);
+					}
 					// NodeFilesystemHistoryDetail登録
 					NodeFilesystemHistoryDetail historyDetail = new NodeFilesystemHistoryDetail(
 							facilityId, info.getDeviceIndex(), info.getDeviceType(), info.getDeviceName(), registerDatetime);
@@ -2051,5 +2074,18 @@ public class NodeConfigRegisterUtil {
 	 */
 	private static String addIgnoreMonitorCode( String str ) {
 		return str + IGNORE_MONITOR;
+	}
+	
+	/**
+	 * デバイス表示名が重複している旨のログ出力及びINTERNALイベントを通知するCallbackを追加する
+	 * 
+	 * @param jtm
+	 * @param facilityId
+	 * @param info
+	 */
+	private static void addNotifyCallback(JpaTransactionManager jtm, String facilityId, NodeDeviceInfo info) {
+		DeviceDisplayNameDuplicateCallback callback =
+				jtm.addExclusiveCallback(new DeviceDisplayNameDuplicateCallback(facilityId));
+		callback.addDuplicateDevice(info);
 	}
 }

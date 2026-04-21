@@ -8,8 +8,6 @@
 
 package com.clustercontrol.reporting.factory;
 
-import java.util.Date;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -26,6 +24,7 @@ import com.clustercontrol.notify.session.NotifyControllerBean;
 import com.clustercontrol.reporting.bean.ReportingInfo;
 import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.model.ReportingInfoEntity;
+import com.clustercontrol.util.HinemosTime;
 
 import jakarta.persistence.EntityExistsException;
 
@@ -84,8 +83,8 @@ public class AddReporting {
 			entity.setOutputType(data.getOutputType());
 			entity.setReportTitle(data.getReportTitle());
 			entity.setValidFlg(data.getValidFlg());
-			entity.setRegDate(new Date().getTime());
-			entity.setUpdateDate(new Date().getTime());
+			entity.setRegDate(HinemosTime.currentTimeMillis());
+			entity.setUpdateDate(HinemosTime.currentTimeMillis());
 			entity.setOwnerRoleId(data.getOwnerRoleId());
 			entity.setRegUser(name);
 			entity.setUpdateUser(name);

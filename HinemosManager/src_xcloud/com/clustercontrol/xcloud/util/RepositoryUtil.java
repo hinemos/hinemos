@@ -535,8 +535,10 @@ public class RepositoryUtil {
 											matchedNodeMap.put(entry.getScopeId(), matchedNodes);
 										}
 										matchedNodes.add(entity.getFacilityId());
-										if(!multiFlg)
+										if(!multiFlg){
 											entityIter.remove();
+											break;
+										}
 									}
 								}
 							}
@@ -610,11 +612,12 @@ public class RepositoryUtil {
 								"Unable to assign scope. Because cloudScope doesn't have privilege scopeId=%s, nodeIds=%s", entry.getKey(), entry.getValue().toString()));
 
 						//internal event notify
-						CloudUtil.notifyInternalMessage(
-								InternalIdCloud.CLOUD_SYS_009,
-								CloudMessageConstant.VALIDATION_SCOPE_INVALID_ROLE.getMessage() + "\n" +
-									String.format("CloudScopeID=%s,\nCloudScope OwnerRoleID=%s,\nScopeID=%s,\nnodeIDs=%s", cloudScope.getCloudScopeId(), cloudScope.getOwnerRoleId(),entry.getKey(),entry.getValue())
-								);
+						String message = String.format(
+								"%s%nCloudScopeID=%s,%nCloudScope OwnerRoleID=%s,%nScopeID=%s,%nnodeIDs=%s",
+								CloudMessageConstant.VALIDATION_SCOPE_INVALID_ROLE.getMessage(),
+								cloudScope.getCloudScopeId(), cloudScope.getOwnerRoleId(), entry.getKey(),
+								entry.getValue());
+						CloudUtil.notifyInternalMessage(InternalIdCloud.CLOUD_SYS_009, message);
 						continue;
 					}
 					

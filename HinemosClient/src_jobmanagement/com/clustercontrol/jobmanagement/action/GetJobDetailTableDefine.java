@@ -76,15 +76,15 @@ public class GetJobDetailTableDefine {
 		Locale locale = Locale.getDefault();
 
 		tableDefine.add(TREE,
-				new TableColumnInfo("", TableColumnInfo.NONE, 30, SWT.LEFT));
+				new TableColumnInfo(Messages.getString("job.hierarchy", locale), TableColumnInfo.TYPEICON_JOBNAME, 200, SWT.LEFT));
 		tableDefine.add(STATUS,
 				new TableColumnInfo(Messages.getString("run.status", locale), TableColumnInfo.STATE, 100, SWT.LEFT));
 		tableDefine.add(SKIP,
-				new TableColumnInfo(Messages.getString("skip", locale), TableColumnInfo.CHECKBOX, 50, SWT.LEFT));
+				new TableColumnInfo(Messages.getString("skip", locale), TableColumnInfo.CHECKBOX, 65, SWT.LEFT));
 		tableDefine.add(END_STATUS,
 				new TableColumnInfo(Messages.getString("end.status", locale), TableColumnInfo.END_STATUS, 65, SWT.LEFT));
 		tableDefine.add(END_VALUE,
-				new TableColumnInfo(Messages.getString("end.value", locale), TableColumnInfo.NONE, 50, SWT.LEFT));
+				new TableColumnInfo(Messages.getString("end.value", locale), TableColumnInfo.NONE, 65, SWT.LEFT));
 		tableDefine.add(JOB_ID,
 				new TableColumnInfo(Messages.getString("job.id", locale), TableColumnInfo.NONE, 100, SWT.LEFT));
 		tableDefine.add(JOB_NAME,

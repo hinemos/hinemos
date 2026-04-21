@@ -65,7 +65,7 @@ public class BinaryForwarder {
 	public void add(AgtBinaryFileDTORequest binaryFile, List<AgtBinaryRecordDTORequest> binaryRecords, AgtMessageInfoRequest msgInfo,
 			AgtMonitorInfoRequest monitorInfo, AgtRunInstructionInfoRequest runInstructionInfo) {
 
-		transporter.add(new BinaryResult(binaryFile, binaryRecords, msgInfo, monitorInfo, runInstructionInfo));
+		transporter.addIfSpace(new BinaryResult(binaryFile, binaryRecords, msgInfo, monitorInfo, runInstructionInfo));
 	}
 
 	private static class BinaryResult {

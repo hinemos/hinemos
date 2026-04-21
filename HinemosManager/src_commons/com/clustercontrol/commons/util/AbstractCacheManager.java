@@ -34,7 +34,6 @@ public abstract class AbstractCacheManager implements ICacheManager {
 	
 	public static final String KEY_JOB_INFO = "JOB_INFO";
 	public static final String KEY_JOB_MST = "JOB_MST";
-	public static final String KEY_JOB_KICK = "JOB_KICK";
 	public static final String KEY_JOB_WAITING = "JOB_WAITING";
 	public static final String KEY_JOB_RUNNING = "JOB_RUNNING";
 	public static final String KEY_JOB_GOING = "JOB_GOING";

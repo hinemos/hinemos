@@ -23,6 +23,7 @@ import com.clustercontrol.fault.HinemosUnknown;
  */
 public class MonitorResult {
 	public final String message;
+	public final String logMessage;
 
 	public final AgtMonitorInfoResponse monitorInfoRsp;
 	public final AgtMonitorStringValueInfoResponse monitorStrValueInfoRsp;
@@ -51,5 +52,24 @@ public class MonitorResult {
 
 		runInstructionInfoReq = (runInstructionInfo == null) ? null : new AgtRunInstructionInfoRequest();
 		RestAgentBeanUtil.convertBean(runInstructionInfo, runInstructionInfoReq);
+		
+		String monitorId = "";
+		String monitorTypeId = "";
+		String generationDate = "";
+		if(monitorInfo != null){
+			monitorId = monitorInfo.getMonitorId();
+			monitorTypeId = monitorInfo.getMonitorTypeId();
+		}
+		if(msgInfo != null){
+			generationDate = String.valueOf(msgInfo.getGenerationDate());
+		}
+		
+		this.logMessage = String.format("MonitorResult: monitorId=%s, monitorTypeId=%s, generationDate=%s", monitorId,
+				monitorTypeId, generationDate);
+	}
+	
+	@Override
+	public String toString() {
+		return this.logMessage;
 	}
 }

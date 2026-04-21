@@ -44,8 +44,8 @@ public class ScenarioLogfileMonitor extends AbstractFileMonitor<MonitorInfoWrapp
 	}
 
 	@Override
-	protected void patternMatchAndSendManager(String line) {
-		MonitorStringUtil.patternMatch(m_wrapper.formatLine(line, fileMonitorConfig.getFilMessageLength()),
+	protected boolean patternMatchAndSendManager(String line) {
+		return MonitorStringUtil.patternMatch(m_wrapper.formatLine(line, fileMonitorConfig.getFilMessageLength()),
 				m_wrapper.getMonitorInfo(), m_wrapper.getRunInstructionInfo(), getFilePath());
 	}
 

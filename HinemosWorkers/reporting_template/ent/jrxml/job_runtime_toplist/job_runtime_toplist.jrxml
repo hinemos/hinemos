@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Created with Jaspersoft Studio version 6.16.0.final using JasperReports Library version 6.16.0-48579d909b7943b64690c65c71e07e0b80981928  -->
+<!-- Created with Jaspersoft Studio version 6.21.2.final using JasperReports Library version 6.21.2-8434a0bd7c3bbc37cbf916f2968d35e4b165821a  -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="job_runtime_order" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="b3555393-5ca6-4c3c-a841-04fcb1f6eb87">
 	<property name="net.sf.jasperreports.awt.ignore.missing.font" value="true"/>
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="monitor_detail CSV"/>
@@ -77,7 +77,7 @@
 			<property name="local_mesure_unitheight" value="pixel"/>
 			<property name="com.jaspersoft.studio.unit.height" value="px"/>
 			<textField pattern="">
-				<reportElement x="20" y="10" width="120" height="16" uuid="14e61e25-6976-4ff6-a952-478b431aa19b">
+				<reportElement x="20" y="10" width="117" height="16" uuid="14e61e25-6976-4ff6-a952-478b431aa19b">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
@@ -93,8 +93,8 @@
 				</textElement>
 				<textFieldExpression><![CDATA[$P{item.name.jobid}]]></textFieldExpression>
 			</textField>
-			<textField pattern="">
-				<reportElement x="241" y="10" width="44" height="16" uuid="8ab4bc5d-639c-4844-a635-c3e0b417540b">
+			<textField textAdjust="StretchHeight" pattern="">
+				<reportElement x="238" y="10" width="52" height="16" uuid="8ab4bc5d-639c-4844-a635-c3e0b417540b" positionType="Float">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
@@ -145,7 +145,7 @@
 				<textFieldExpression><![CDATA[$P{item.name.starttime}]]></textFieldExpression>
 			</textField>
 			<textField pattern="">
-				<reportElement x="285" y="10" width="100" height="16" uuid="5aacd6f7-4b2e-43f3-9a1a-674e4538b6da">
+				<reportElement x="290" y="10" width="95" height="16" uuid="5aacd6f7-4b2e-43f3-9a1a-674e4538b6da">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
@@ -162,7 +162,7 @@
 				<textFieldExpression><![CDATA[$P{item.name.sessionid}]]></textFieldExpression>
 			</textField>
 			<textField pattern="">
-				<reportElement x="194" y="10" width="47" height="16" uuid="4cb747a4-6120-4bfc-a612-69fc42d50029">
+				<reportElement x="191" y="10" width="47" height="16" uuid="4cb747a4-6120-4bfc-a612-69fc42d50029">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
@@ -179,7 +179,7 @@
 				<textFieldExpression><![CDATA[$P{item.name.elapsedtimeavg}]]></textFieldExpression>
 			</textField>
 			<textField pattern="">
-				<reportElement x="140" y="10" width="54" height="16" uuid="10c8782f-3b77-42b1-a94c-4c6ce9db54ce">
+				<reportElement x="137" y="10" width="54" height="16" uuid="10c8782f-3b77-42b1-a94c-4c6ce9db54ce">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
@@ -202,7 +202,7 @@
 			<property name="local_mesure_unitheight" value="pixel"/>
 			<property name="com.jaspersoft.studio.unit.height" value="px"/>
 			<textField textAdjust="StretchHeight" pattern="yyyy-MM-dd HH:mm:ss">
-				<reportElement stretchType="RelativeToTallestObject" x="20" y="0" width="120" height="16" uuid="d440ccc1-23db-4644-904a-40d2155ee519">
+				<reportElement stretchType="RelativeToTallestObject" x="20" y="0" width="117" height="16" uuid="d440ccc1-23db-4644-904a-40d2155ee519">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
@@ -236,7 +236,7 @@
 				<textFieldExpression><![CDATA[new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format($F{end_date})]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight">
-				<reportElement stretchType="RelativeToTallestObject" x="241" y="0" width="44" height="16" uuid="f5b4c14d-0127-4d59-be59-8cb74684b453">
+				<reportElement stretchType="RelativeToTallestObject" x="238" y="0" width="52" height="16" uuid="f5b4c14d-0127-4d59-be59-8cb74684b453">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
@@ -270,7 +270,7 @@
 				<textFieldExpression><![CDATA[new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format($F{start_date})]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight">
-				<reportElement stretchType="RelativeToTallestObject" x="285" y="0" width="100" height="16" uuid="d99c7c21-9fef-473c-8c95-34ce06b7d7c8">
+				<reportElement stretchType="RelativeToTallestObject" x="290" y="0" width="95" height="16" uuid="d99c7c21-9fef-473c-8c95-34ce06b7d7c8">
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
@@ -287,7 +287,7 @@
 				<textFieldExpression><![CDATA[$F{session_id}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight">
-				<reportElement stretchType="RelativeToTallestObject" x="194" y="0" width="47" height="16" uuid="f5c67a98-c3a2-4365-a497-d20885d8cfe2">
+				<reportElement stretchType="RelativeToTallestObject" x="191" y="0" width="47" height="16" uuid="f5c67a98-c3a2-4365-a497-d20885d8cfe2">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>
@@ -304,7 +304,7 @@
 				<textFieldExpression><![CDATA[$F{elapsed_time_avg}]]></textFieldExpression>
 			</textField>
 			<textField textAdjust="StretchHeight">
-				<reportElement stretchType="RelativeToTallestObject" x="140" y="0" width="54" height="16" uuid="b6a398df-43b2-4714-aca6-1edf6f382bed">
+				<reportElement stretchType="RelativeToTallestObject" x="137" y="0" width="54" height="16" uuid="b6a398df-43b2-4714-aca6-1edf6f382bed">
 					<property name="local_mesure_unitwidth" value="pixel"/>
 					<property name="com.jaspersoft.studio.unit.width" value="px"/>
 					<property name="com.jaspersoft.studio.unit.height" value="px"/>

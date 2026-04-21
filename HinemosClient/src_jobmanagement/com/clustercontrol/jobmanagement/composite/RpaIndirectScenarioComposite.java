@@ -617,9 +617,11 @@ public class RpaIndirectScenarioComposite extends Composite {
 					m_stopJobButton.setSelection(true);
 				} else {
 					m_stopScenarioButton.setEnabled(true);
-					m_stopScenarioButton.setSelection(true);
 					m_stopJobButton.setEnabled(true);
-					m_stopJobButton.setSelection(false);
+					// ラジオボタンがどちらも選択されていない場合は初期値を設定する
+					if (!m_stopScenarioButton.getSelection() && !m_stopJobButton.getSelection()) {
+						m_stopScenarioButton.setSelection(true);
+					}
 				}
 			}
 		}

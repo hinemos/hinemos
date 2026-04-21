@@ -244,7 +244,7 @@ public class EntityUpdater {
 					}
 				}
 			} catch (Exception e) {
-				throw ErrorCode.AUTOUPDATE_NOT_DELETE_FACILITY.cloudManagerFault(e, entityEntity.getCloudScopeId(), entityEntity.getLocationId(), entityEntity.getFacilityId(), CloudManagerException.getMessage(e));
+				throw ErrorCode.AUTOUPDATE_NOT_DELETE_FACILITY.cloudManagerFault(e, entityEntity.getCloudScopeId(), entityEntity.getLocationId(), entityEntity.getFacilityId(), e.getMessage());
 			}
 		}
 	}

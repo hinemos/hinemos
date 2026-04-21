@@ -1070,6 +1070,11 @@ public class FacilityModifier {
 					entity.setNote(info.getNote());
 					em.persist(entity);
 				}
+			} else {
+				// 備考情報が存在しない場合はHinemosクライアントとの登録動作にあわせるため、備考情報を生成する
+				NodeNoteInfo entity = new NodeNoteInfo(nodeInfo.getFacilityId(), 0);
+				entity.setNote("");
+				em.persist(entity);
 			}
 		} catch (HinemosUnknown e) {
 			throw e;

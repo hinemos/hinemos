@@ -58,7 +58,7 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	private String hardwareType				= "";//
 	private String ipAddressV4				= "";//
 	private String ipAddressV6				= "";//
-	private Integer ipAddressVersion		= -1;//
+	private Integer ipAddressVersion		= 4;//
 	private String ipmiIpAddress			= "";//
 	private String ipmiLevel				= "";//
 	private Integer ipmiPort				= 0;//
@@ -80,8 +80,8 @@ public class NodeInfo extends FacilityInfo implements Serializable {
 	private String snmpUser					= "";//
 	private String snmpAuthPassword			= "";//
 	private String snmpPrivPassword			= "";//
-	private String snmpAuthProtocol			= SnmpProtocolConstant.MD5;//
-	private String snmpPrivProtocol			= SnmpProtocolConstant.DES;//
+	private String snmpAuthProtocol			= "";//
+	private String snmpPrivProtocol			= "";//
 	private String sshUser 					= "root";//
 	private String sshUserPassword				= "";//
 	private String sshPrivateKeyFilepath		= "";//

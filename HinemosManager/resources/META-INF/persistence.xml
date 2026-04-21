@@ -40,6 +40,8 @@
 			<property name="eclipselink.weaving" value="true"/>
 
 			<!-- Shared Cache config -->
+			<!-- When defining EclipseLink to use a second-level cache, be aware that the cache may persist even after data is deleted using a NativeQuery. -->
+			<!-- For entities related to job history, the cache is explicitly cleared when executing job history deletion. When adding this configuration, implement as needed. -->
 			<property name="eclipselink.cache.shared.default" value="true"/>
 			<property name="eclipselink.cache.type.default" value="Soft"/>
 			<property name="eclipselink.cache.size.default" value="1000"/>

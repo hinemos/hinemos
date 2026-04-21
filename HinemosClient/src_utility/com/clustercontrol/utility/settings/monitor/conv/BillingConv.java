@@ -148,7 +148,8 @@ public class BillingConv {
 							}
 						}
 						if(!matched){
-							errMessage = Messages.getString("SettingTools.EssentialValueInvalid") + " Target = " + value1 + " : " + value2;
+							String[] args ={billingMonitor.getMonitor().getMonitorId(),  value1 + " : " + value2 };
+							errMessage = Messages.getString("SettingTools.BillingMonTargetNotRef", args);
 						}
 					} catch (HinemosUnknown | CloudManagerException | InvalidRole | InvalidUserPass e) {
 						errMessage = Messages.getString(HinemosMessage.replace(e.getMessage()));

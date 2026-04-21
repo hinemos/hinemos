@@ -47,7 +47,6 @@ import org.glassfish.grizzly.http.server.Request;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
-import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.StringUtil;
 import com.clustercontrol.fault.CommandTemplateDuplicate;
@@ -332,9 +331,6 @@ public class CommonRestEndpoints {
 	public Response getMailTemplateList(@QueryParam(value = "ownerRoleId") String ownerRoleId, @Context Request request,
 			@Context UriInfo uriInfo) throws HinemosUnknown, MailTemplateNotFound, InvalidUserPass, InvalidRole {
 		m_log.info("call getMailTemplateList()");
-
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 		
 		List<MailTemplateInfo> infoResList = new MailTemplateControllerBean()
 				.getMailTemplateListByOwnerRole(ownerRoleId);
@@ -1678,9 +1674,6 @@ public class CommonRestEndpoints {
 	public Response getRestAccessInfoList(@QueryParam(value = "ownerRoleId") String ownerRoleId, @Context Request request,
 			@Context UriInfo uriInfo) throws HinemosUnknown, InvalidUserPass, InvalidRole {
 		m_log.info("call getRestAccessInfoList()");
-
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 		
 		List<RestAccessInfo> infoResList = new RestAccessInfoControllerBean()
 				.getRestAccessListByOwnerRole(ownerRoleId);

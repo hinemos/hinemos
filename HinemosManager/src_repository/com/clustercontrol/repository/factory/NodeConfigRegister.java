@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -1006,7 +1007,7 @@ public class NodeConfigRegister {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.OS_NAME.getMessage(), beforeObj.getOsName(), afterObj.getOsName()) + "\n");
 				}
-				if (beforeObj.getOsRelease() != afterObj.getOsRelease()) {
+				if (!Objects.equals(beforeObj.getOsRelease(), afterObj.getOsRelease())) {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.OS_RELEASE.getMessage(), beforeObj.getOsRelease(), afterObj.getOsRelease()) + "\n");
 				}
@@ -1018,15 +1019,9 @@ public class NodeConfigRegister {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.CHARACTER_SET.getMessage(), beforeObj.getCharacterSet(), afterObj.getCharacterSet()) + "\n");
 				}
-				if (beforeObj.getStartupDateTime() != afterObj.getStartupDateTime()) {
-					String beforeDate = "";
-					String afterDate = "";
-					if (beforeDate != null) {
-						beforeDate = sdf.format(new Date(beforeObj.getStartupDateTime()));
-					}
-					if (afterDate != null) {
-						afterDate = sdf.format(new Date(afterObj.getStartupDateTime()));
-					}
+				if (!Objects.equals(beforeObj.getStartupDateTime(), afterObj.getStartupDateTime())) {
+					String beforeDate = sdf.format(new Date(beforeObj.getStartupDateTime()));
+					String afterDate = sdf.format(new Date(afterObj.getStartupDateTime()));
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.NODE_OS_STARTUP_DATE_TIME.getMessage(), beforeDate, afterDate) + "\n");
 				}
@@ -1065,7 +1060,7 @@ public class NodeConfigRegister {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.DEVICE_DISPLAY_NAME.getMessage(), beforeObj.getDeviceName(), afterObj.getDeviceName()) + "\n");
 				}
-				if (beforeObj.getDeviceSize() != afterObj.getDeviceSize()) {
+				if (!Objects.equals(beforeObj.getDeviceSize(), afterObj.getDeviceSize())) {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.DEVICE_SIZE.getMessage(), beforeObj.getDeviceSize().toString(), afterObj.getDeviceSize().toString()) + "\n");
 				}
@@ -1125,7 +1120,7 @@ public class NodeConfigRegister {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.DEVICE_DISPLAY_NAME.getMessage(), beforeObj.getDeviceName(), afterObj.getDeviceName()) + "\n");
 				}
-				if (beforeObj.getDeviceSize() != afterObj.getDeviceSize()) {
+				if (!Objects.equals(beforeObj.getDeviceSize(), afterObj.getDeviceSize())) {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.DEVICE_SIZE.getMessage(), beforeObj.getDeviceSize().toString(), afterObj.getDeviceSize().toString()) + "\n");
 				}
@@ -1173,7 +1168,7 @@ public class NodeConfigRegister {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.DEVICE_DISPLAY_NAME.getMessage(), beforeObj.getDeviceName(), afterObj.getDeviceName()) + "\n");
 				}
-				if (beforeObj.getDeviceSize() != afterObj.getDeviceSize()) {
+				if (!Objects.equals(beforeObj.getDeviceSize(), afterObj.getDeviceSize())) {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.DEVICE_SIZE.getMessage(), beforeObj.getDeviceSize().toString(), afterObj.getDeviceSize().toString()) + "\n");
 				}
@@ -1229,7 +1224,7 @@ public class NodeConfigRegister {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.DEVICE_DISPLAY_NAME.getMessage(), beforeObj.getDeviceName(), afterObj.getDeviceName()) + "\n");
 				}
-				if (beforeObj.getDeviceSize() != afterObj.getDeviceSize()) {
+				if (!Objects.equals(beforeObj.getDeviceSize(), afterObj.getDeviceSize())) {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.DEVICE_SIZE.getMessage(), beforeObj.getDeviceSize().toString(), afterObj.getDeviceSize().toString()) + "\n");
 				}
@@ -1281,7 +1276,7 @@ public class NodeConfigRegister {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.DEVICE_DISPLAY_NAME.getMessage(), beforeObj.getDeviceName(), afterObj.getDeviceName()) + "\n");
 				}
-				if (beforeObj.getDeviceSize() != afterObj.getDeviceSize()) {
+				if (!Objects.equals(beforeObj.getDeviceSize(), afterObj.getDeviceSize())) {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.DEVICE_SIZE.getMessage(), beforeObj.getDeviceSize().toString(), afterObj.getDeviceSize().toString()) + "\n");
 				}
@@ -1451,7 +1446,7 @@ public class NodeConfigRegister {
 					sbDetail.append("\t" + MessageConstant.MESSAGE_NODE_CONFIG_SETTING_MODIFY_DETAIL.getMessage(
 							MessageConstant.NODE_PACKAGE_RELEASE.getMessage(), beforeObj.getRelease(), afterObj.getRelease()) + "\n");
 				}
-				if (beforeObj.getInstallDate() != afterObj.getInstallDate()) {
+				if (!Objects.equals(beforeObj.getInstallDate(), afterObj.getInstallDate())) {
 					String beforeDate = "";
 					String afterDate = "";
 					if (beforeDate != null) {

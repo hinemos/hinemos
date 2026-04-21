@@ -231,23 +231,17 @@ public class ParseMib {
 	
 	/**
 	 * 文字数制限チェック
-	 * ueiとlogmsgを対象とし、制限を越える場合は
-	 * エラーではなく、制限内にトリムして返す
+	 * uei(トラップ名)を対象とし、制限を越える場合は
+	 * エラーではなく、DB側の制限に合わせ制限内にトリムして返す
 	 * 
 	 * @param trap
 	 */
 	private SnmpTrapMasterInfo trimMibContents(SnmpTrapMasterInfo trap) {
 		String uei = trap.getUei();
-		String logmsg = trap.getLogmsg();
 		
 		if(uei.length() > DataRangeConstant.VARCHAR_256) {
 			trap.setUei(uei.substring(0,DataRangeConstant.VARCHAR_256));
 		}
-		
-		if(logmsg.length() > DataRangeConstant.VARCHAR_256) {
-			trap.setLogmsg(logmsg.substring(0,DataRangeConstant.VARCHAR_256));
-		}
-		
 		return trap;
 	}
 

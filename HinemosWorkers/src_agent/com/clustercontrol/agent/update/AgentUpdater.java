@@ -122,15 +122,14 @@ public class AgentUpdater {
 			GetAgentLibMapResponse res = AgentRestClientWrapper.getAgentLibMap(Agent.getAgentInfoRequest());
 			return res.getMd5Map();
 		}
-	
-		InputStream downloadAgentLib(String path)
+
+		File downloadAgentLib(String path)
 				throws InvalidRole, InvalidUserPass, InvalidSetting, AgentLibFileNotFound,
 				RestConnectFailed, HinemosUnknown, FileNotFoundException {
 			DownLoadAgentLibRequest req = new DownLoadAgentLibRequest();
 			req.setAgentInfo(Agent.getAgentInfoRequest());
 			req.setLibPath(path);
-			File res = AgentRestClientWrapper.downloadAgentLib(req);
-			return new FileInputStream(res);
+			return AgentRestClientWrapper.downloadAgentLib(req);
 		}
 
 		void pipeStream(InputStream inp, OutputStream out) throws IOException {
@@ -278,10 +277,21 @@ public class AgentUpdater {
 			if (saveDir == null) { // ありえないが、FindBugsが検知してしまうので…
 				throw new IllegalStateException(savefile.toString());
 			}
-			try (InputStream inpStream = external.downloadAgentLib(mgrPath)) {
-				external.createDirectories(saveDir);
-				try (OutputStream outStream = external.newOutputStream(savefile)) {
-					external.pipeStream(inpStream, outStream);
+			File file = null;
+			try {
+				file = external.downloadAgentLib(mgrPath);
+				try (InputStream inpStream = new FileInputStream(file)) {
+					external.createDirectories(saveDir);
+					try (OutputStream outStream = external.newOutputStream(savefile)) {
+						external.pipeStream(inpStream, outStream);
+					}
+				}
+			} finally {
+				// ダウンロードした一時ファイルの削除
+				if (file != null) {
+					if (!file.delete()) {
+						log.warn("Fail to delete " + file.getAbsolutePath());
+					}
 				}
 			}
 			downloadedFiles.add(savefile);

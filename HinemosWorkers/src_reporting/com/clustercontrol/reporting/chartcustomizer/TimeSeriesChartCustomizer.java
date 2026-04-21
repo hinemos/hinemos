@@ -37,7 +37,7 @@ public class TimeSeriesChartCustomizer implements JRChartCustomizer {
 		Date maxDate = srcAxis.getMaximumDate();
 		log.debug("date range: " + minDate + " - " + maxDate);
 		if ((maxDate.getTime() - minDate.getTime()) / (1000.0 * 60 * 60 * 24) > 365.5) {
-			srcAxis.setDateFormatOverride(new SimpleDateFormat(" YYYY/M "));
+			srcAxis.setDateFormatOverride(new SimpleDateFormat(" yyyy/M "));
 		} else if ((maxDate.getTime() - minDate.getTime()) / (1000.0 * 60 * 60 * 24) > 6.5) {
 			srcAxis.setDateFormatOverride(new SimpleDateFormat("  M/d  "));
 		} else if ((maxDate.getTime() - minDate.getTime()) / (1000.0 * 60 * 60 * 24) > 1.5) {

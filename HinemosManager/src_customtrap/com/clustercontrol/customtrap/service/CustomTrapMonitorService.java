@@ -50,6 +50,7 @@ import com.clustercontrol.customtrap.bean.CustomTrap;
 import com.clustercontrol.customtrap.bean.CustomTraps;
 import com.clustercontrol.customtrap.util.CustomTrapNotifier;
 import com.clustercontrol.platform.HinemosPropertyDefault;
+import com.clustercontrol.customtrap.service.TrapProcCounter;
 import com.clustercontrol.util.HinemosTime;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -81,6 +82,7 @@ public class CustomTrapMonitorService {
 	private static int HTTP_BAD_REQUEST = 400;
 	private static String HTTP_BAD_REQUEST_MSG = "400 Bad Request";
 
+	private TrapProcCounter counter = new TrapProcCounter();
 	
 	/**
 	 * CustomTrapMonitorService起動します。
@@ -154,6 +156,8 @@ public class CustomTrapMonitorService {
 		// リクエストの一時受けハンドラ。
 		HttpHandler handler = new HttpHandler() {
 			public void handle(final HttpExchange exchange) throws IOException {
+				// カウンターの更新: リクエストを受信した際にカウントを増やす
+				counter.countupReceived();
 				try {
 					if (logger.isDebugEnabled()) {
 						logger.debug("serverProcess() : Received HTTP request. url=" + exchange.getRequestURI());
@@ -183,7 +187,7 @@ public class CustomTrapMonitorService {
 								
 								try {
 									CustomTraps receivedCustomTraps = parseCustomTrap(exchange.getRemoteAddress().getHostName(), msgBody, null);
-									ReceivedCustomTrapFilter receivedCustomTrapFilter = new ReceivedCustomTrapFilter(receivedCustomTraps, notifier, defaultCharset);
+									ReceivedCustomTrapFilter receivedCustomTrapFilter = new ReceivedCustomTrapFilter(receivedCustomTraps, notifier, defaultCharset, counter);
 									receivedCustomTrapFilter.work();
 								} catch(JsonProcessingException | ParseException e) {
 									// リクエストのボディ解析に失敗。
@@ -367,6 +371,7 @@ public class CustomTrapMonitorService {
 			@Override
 			public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
 				if (handler != null) {
+					counter.countupDiscarded();
 					logger.warn("too many customtrap. customtrap discarded : " + r);
 					handler.rejectedExecution(r, executor);
 				}
@@ -413,7 +418,24 @@ public class CustomTrapMonitorService {
 	 * @param custonTraps 受信したカスタムトラップ
 	 */
 	public void customtrapReceivedSync(CustomTraps custonTraps) {
-		ReceivedCustomTrapFilter receivedCustomTrapFilter = new ReceivedCustomTrapFilter(custonTraps, notifier, defaultCharset);
+		ReceivedCustomTrapFilter receivedCustomTrapFilter = new ReceivedCustomTrapFilter(custonTraps, notifier, defaultCharset, counter);
 		receivedCustomTrapFilter.work();
 	}
+	
+	public long getReceivedCount() {
+		return counter.getReceivedCount();
+	}
+
+	public long getNotifiedCount() {
+		return counter.getNotifiedCount();
+	}
+
+	public long getDiscardedCount() {
+		return counter.getDiscardedCount();
+	}
+	
+	public int getQueuedCount() {
+		return httpPoolExecutor.getQueue().size();
+	}
+	
 }

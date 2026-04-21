@@ -21,6 +21,7 @@ import com.clustercontrol.commons.util.HinemosPropertyCommon;
 import com.clustercontrol.commons.util.ILockManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.commons.util.LockManagerFactory;
+import com.clustercontrol.jobmanagement.bean.RunInstructionInfo;
 import com.clustercontrol.jobmanagement.factory.JobSessionImpl;
 import com.clustercontrol.jobmanagement.factory.ModifyJobKick;
 import com.clustercontrol.jobmanagement.util.JobLinkRcvJobWorker;
@@ -28,6 +29,7 @@ import com.clustercontrol.jobmanagement.util.JobLinkSendJobWorker;
 import com.clustercontrol.jobmanagement.util.JobMultiplicityCache;
 import com.clustercontrol.jobmanagement.util.JobSessionChangeDataCache;
 import com.clustercontrol.jobmanagement.util.MonitorJobWorker;
+import com.clustercontrol.jobmanagement.util.RunHistoryUtil;
 import com.clustercontrol.maintenance.util.QueryUtil;
 import com.clustercontrol.notify.util.MonitorStatusCache;
 import com.clustercontrol.util.HinemosTime;
@@ -270,6 +272,13 @@ public class MaintenanceJob extends MaintenanceObject{
 
 						// ジョブ連携待機ジョブで使用するキャッシュ削除
 						JobLinkRcvJobWorker.removeInfoBySessionId(sessionId);
+						
+						// RunHistory削除
+						// RunHistoryはセッション単位で一括で削除する
+						for (RunInstructionInfo runInstructionInfo : RunHistoryUtil
+								.findRunHistoryBySessionId(sessionId)) {
+							RunHistoryUtil.delRunHistory(runInstructionInfo);
+						}
 					}
 
 					// 不要な事前生成ジョブセッションも削除する

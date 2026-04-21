@@ -131,10 +131,10 @@ public class FileCheckManager {
 			while (true) {
 				try {
 					ArrayList<String> delList = new ArrayList<String>();
-					for (String directory : m_fileCheckCache.keySet()) {
-						FileCheck filecheck = m_fileCheckCache.get(directory);
+					for (Entry<String, FileCheck> entry : m_fileCheckCache.entrySet()) {
+						FileCheck filecheck = entry.getValue();
 						if (filecheck.sizeJobFileCheckList() == 0) {
-							delList.add(directory);
+							delList.add(entry.getKey());
 						} else {
 							filecheck.run();
 						}

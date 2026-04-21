@@ -11,7 +11,9 @@ package com.clustercontrol.jobmanagement.bean;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.annotation.XmlType;
@@ -30,6 +32,7 @@ import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ReferJobSelec
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.DateLongToStringSerializer;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.LanguageTranslateSerializer;
+import com.clustercontrol.util.MessageConstant;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -1331,8 +1334,30 @@ public class JobInfo implements Serializable, Cloneable, RequestDto {
 			}
 		}
 		if (param != null) {
+			Set<String> existIds = new HashSet<String>();
 			for (JobParameterInfo req : param) {
 				req.correlationCheck();
+				//ID重複チェック
+				if (req.getParamId() != null && !req.getParamId().isEmpty()) {
+					if (existIds.contains(req.getParamId())) {
+						String[] args ={ req.getParamId(),  MessageConstant.JOB_PARAM_ID.getMessage() };
+						throw new InvalidSetting(MessageConstant.MESSAGE_DUPLICATED.getMessage(args));
+					}
+					existIds.add(req.getParamId());
+				}
+			}
+		}
+		if (notifyRelationInfos != null) {
+			Set<String> existIds = new HashSet<String>();
+			for (NotifyRelationInfo req : notifyRelationInfos) {
+				//ID重複チェック
+				if (req.getNotifyId() != null && !req.getNotifyId().isEmpty()) {
+					if (existIds.contains(req.getNotifyId())) {
+						String[] args ={ req.getNotifyId(),  MessageConstant.NOTIFY_ID.getMessage() };
+						throw new InvalidSetting(MessageConstant.MESSAGE_DUPLICATED.getMessage(args));
+					}
+					existIds.add(req.getNotifyId());
+				}
 			}
 		}
 	}

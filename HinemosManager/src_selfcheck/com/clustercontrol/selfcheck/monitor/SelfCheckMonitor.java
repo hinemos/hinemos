@@ -13,7 +13,7 @@ package com.clustercontrol.selfcheck.monitor;
  */
 public interface SelfCheckMonitor {
 
-	public void execute();
+	public void execute() throws Exception;
 
 	public String toString();
 

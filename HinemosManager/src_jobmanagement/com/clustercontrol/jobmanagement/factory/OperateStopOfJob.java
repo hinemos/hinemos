@@ -493,7 +493,7 @@ public class OperateStopOfJob {
 							JobEnvVariableInfo envInfo = new JobEnvVariableInfo();
 							envInfo.setEnvVariableId(envEntity.getId().getEnvVariableId());
 							String value = envEntity.getValue();
-							String replacedValue = ParameterUtil.replaceSessionParameterValue(sessionId, facilityId, value);
+							String replacedValue = ParameterUtil.replaceSessionParameterValue(job, facilityId, value);
 							envInfo.setValue(replacedValue);
 							envInfo.setDescription(envEntity.getDescription());
 							envInfoList.add(envInfo);
@@ -527,7 +527,7 @@ public class OperateStopOfJob {
 							m_log.info("stopNode() : Send Stop Command");
 							//コマンド内のパラメータを置き換える
 							String stopCommand = ParameterUtil.replaceAllSessionParameterValue(
-									sessionId, jobunitId, sessionNode.getId().getFacilityId(), job.getStopCommand());
+									job, sessionNode.getId().getFacilityId(), job.getStopCommand());
 							instructionInfo.setCommand(stopCommand);
 						}
 

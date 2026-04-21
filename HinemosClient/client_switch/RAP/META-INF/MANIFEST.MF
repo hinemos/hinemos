@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: %plugin.name
 Bundle-SymbolicName: com.clustercontrol; singleton:=true
-Bundle-Version: 7.0.3._711
+Bundle-Version: 7.0.4._712_720
 Bundle-Description: %product.about
 Bundle-ContactAddress: http://www.hinemos.info
 Bundle-Vendor: %provider.name
@@ -46,7 +46,8 @@ Bundle-ClassPath: HinemosClient.jar,
  lib/castor-core-1.4.1.jar,
  lib/jakarta.inject-api-1.0.3.jar,
  lib/,
- resources/
+ resources/,
+ spotbugslib/spotbugs-annotations-4.7.3.jar
 Require-Bundle: org.eclipse.rap.ui;visibility:=reexport,
  org.eclipse.core.expressions;visibility:=reexport,
  javax.servlet;resolution:=optional;visibility:=reexport,

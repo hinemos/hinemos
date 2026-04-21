@@ -27,6 +27,11 @@ public class ActivationKeyConstant {
 	public static final String TYPE_XCLOUD = "xcloud";
 
 	/**
+	 * RPA無効
+	 */
+	public static final String TYPE_NORPA = "norpa";
+	
+	/**
 	 * 正式版のライセンスキーの先頭6桁の数値
 	 */
 	public static final int ACTIVATION_KEY_YYYYMM = 300012;

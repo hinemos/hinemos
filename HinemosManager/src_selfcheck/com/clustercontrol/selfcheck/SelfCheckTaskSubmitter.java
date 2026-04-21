@@ -33,6 +33,7 @@ import com.clustercontrol.plugin.impl.SchedulerPlugin;
 import com.clustercontrol.plugin.impl.SchedulerPlugin.SchedulerType;
 import com.clustercontrol.selfcheck.monitor.ActivationKeyMonitor;
 import com.clustercontrol.selfcheck.monitor.AsyncTaskQueueMonitor;
+import com.clustercontrol.selfcheck.monitor.CustomTrapQueueMonitor;
 import com.clustercontrol.selfcheck.monitor.DBConnectionCountMonitor;
 import com.clustercontrol.selfcheck.monitor.DBLongTranMonitor;
 import com.clustercontrol.selfcheck.monitor.DatabaseMonitor;
@@ -322,6 +323,9 @@ public class SelfCheckTaskSubmitter implements Runnable {
 
 		// snmptrap queue
 		_executorService.submit(new SelfCheckTask(new SnmpTrapQueueMonitor()));
+
+		// customtrap queue
+		_executorService.submit(new SelfCheckTask(new CustomTrapQueueMonitor()));
 
 		// asynchronous task queue
 		_executorService.submit(new SelfCheckTask(new AsyncTaskQueueMonitor()));
