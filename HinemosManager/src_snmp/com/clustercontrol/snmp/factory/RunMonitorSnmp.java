@@ -21,7 +21,6 @@ import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.monitor.run.factory.RunMonitor;
 import com.clustercontrol.monitor.run.factory.RunMonitorNumericValueType;
-import com.clustercontrol.performance.operator.Operator.InvalidOverValueException;
 import com.clustercontrol.repository.model.NodeInfo;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
 import com.clustercontrol.monitor.bean.ConvertValueConstant;

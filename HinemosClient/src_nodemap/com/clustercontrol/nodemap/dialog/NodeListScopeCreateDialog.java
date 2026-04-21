@@ -153,7 +153,8 @@ public class NodeListScopeCreateDialog extends CommonDialog {
 		label.setText(Messages.getString("owner.role.id") + " : ");
 
 		this.m_ownerRoleId = new RoleIdListComposite(parent, SWT.NONE, this.m_managerName, true, Mode.OWNER_ROLE);
-		gridData = new GridData(200, SizeConstant.SIZE_COMBO_HEIGHT);
+		gridData = new GridData();
+		gridData.widthHint = 200;
 		gridData.horizontalAlignment = GridData.FILL;
 		m_ownerRoleId.setLayoutData(gridData);
 

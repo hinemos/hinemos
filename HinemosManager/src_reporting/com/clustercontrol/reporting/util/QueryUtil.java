@@ -14,6 +14,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.bean.RoleIdConstant;
 import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.InvalidRole;
@@ -174,6 +175,44 @@ public class QueryUtil {
 			List<TemplateSetInfoEntity> list
 			= em.createNamedQuery_OR("TemplateSetInfoEntity.findAll", TemplateSetInfoEntity.class, ownerRoleId)
 			.getResultList();
+			return list;
+		}
+	}
+	
+	/**
+	 * テンプレートセットIDとオーナーロールIDを条件として、TemplateSetInfoEntityを取得する
+	 * テンプレートセットはオブジェクト権限がないため、オーナーロールIDを条件として走査する
+	 * 本メソッドは、getTemplateSetInfoPKが呼び出された後に実行されることを想定している
+	 * getTemplateSetInfoPKにて、ReportingNotFoundが発生しないことを担保した後に、
+	 * オーナーロールIDも検索条件とすることで、対象が存在しない場合は適切な権限がない
+	 * テンプレートセットIDのため、InvalidRoleを発行する
+	 * 戻り値は将来的な利用を見越してlistとするが、ADMINISTRATORSロールの場合は、
+	 * 前述のとおり、getTemplateSetInfoPKが呼び出された後の想定のため、
+	 * getTemplateSetInfoPKで取得した内容を使用する想定とし、本メソッドではnullでの返却とする
+	 * 
+	 * @param templateSetId
+	 * @param ownerRoleId
+	 * @return
+	 * @throws InvalidRole
+	 */
+	public static List<TemplateSetInfoEntity> getTemplateSetInfoPKAndOR(String templateSetId, String ownerRoleId) throws InvalidRole {
+		// ADMINISTRATORSロールの場合はSQLの発行もせずnullで返却させる
+		if (RoleIdConstant.isAdministratorRole(ownerRoleId)) {
+			return null;
+		}
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+			List<TemplateSetInfoEntity> list = em.createNamedQuery("TemplateSetInfoEntity.findBytemplateSetIdAndOwnerRoleId", TemplateSetInfoEntity.class)
+					.setParameter("templateSetId", templateSetId)
+					.setParameter("ownerRoleId", ownerRoleId)
+					.getResultList();
+			if (list.isEmpty() || list.size() == 0) {
+				InvalidRole e = new InvalidRole("TemplateSetInfoEntity.TemplateSetInfoEntity.findBytemplateSetIdAndOwnerRoleId"
+						+ ", templateSetId = " + templateSetId + ", ownerRoleId = " + ownerRoleId);
+				m_log.info("getTemplateSetInfoPKAndOR() : "
+						+ e.getClass().getSimpleName() + ", " + e.getMessage());
+				throw e;
+			}
 			return list;
 		}
 	}

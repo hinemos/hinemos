@@ -190,6 +190,10 @@ public abstract class FacilityFigure extends FileImageFigure {
 		m_tooltip.add(new Label(str));
 	}
 
+	public Panel getTooltip(){
+		return m_tooltip;
+	}
+
 	public FacilityElementResponse getFacilityElement() {
 		return m_element;
 	}

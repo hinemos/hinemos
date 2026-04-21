@@ -972,13 +972,13 @@ public class CalendarDetailDialog extends CommonDialog{
 		}
 		
 		// テキスト 振り替え間隔
-		if (("").equals(calDetailSubstituteTime.getText())) {
+		if (("").equals(calDetailSubstituteTime.getText() ) && calDetailSubstituteCheck.getSelection() ) {
 			calDetailSubstituteTime.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
 		} else {
 			calDetailSubstituteTime.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
 		}
 		// テキスト 振り替え上限
-		if (("").equals(calDetailSubstituteLimit.getText())) {
+		if (("").equals(calDetailSubstituteLimit.getText()) && calDetailSubstituteCheck.getSelection()) {
 			calDetailSubstituteLimit.setBackground(RequiredFieldColorConstant.COLOR_REQUIRED);
 		} else {
 			calDetailSubstituteLimit.setBackground(RequiredFieldColorConstant.COLOR_UNREQUIRED);
@@ -1136,30 +1136,36 @@ public class CalendarDetailDialog extends CommonDialog{
 
 		// 振り替え間隔
 		// 稼動・非稼動の稼動の場合のみ振り替えを実施する
-		Integer substituteDateInt = 0;
+		Integer substituteDateInt = null;
+		Integer substituteLimiteInt = null;
 		int SUBSTITUTE_DATE_INT_MAX = 24 * 366; // 24h*366day(1year)
 		int SUBSTITUTE_DATE_INT_MIN = SUBSTITUTE_DATE_INT_MAX * -1;
 		String checkParam = "";
 		try {
 			this.inputData.setSubstituteFlg(calDetailSubstituteCheck.getSelection());
-			// 振り替えがONの場合のみ、振り替え時間と振り替え間隔をチェックして格納する
-			checkParam = Messages.getString("calendar.detail.substitute.time");
-			substituteDateInt = Integer.parseInt(calDetailSubstituteTime.getText());
-			if (substituteDateInt == 0 || substituteDateInt < SUBSTITUTE_DATE_INT_MIN || substituteDateInt > SUBSTITUTE_DATE_INT_MAX) {
-				String[] args = {Messages.getString("calendar.detail.substitute.time"), "0",
-						String.valueOf(SUBSTITUTE_DATE_INT_MIN), String.valueOf(SUBSTITUTE_DATE_INT_MAX)};
-				this.setValidateResult(Messages.getString("message.hinemos.1"), Messages.getString("message.calendar.54",args));
-				return null;
+			// 振り替えがONの場合、必須入力確認（未入力ならInteger.parseIntでException）。振り替え時間と振り替え間隔の入力が有りならチェックして格納する
+			if (calDetailSubstituteCheck.getSelection() || !calDetailSubstituteTime.getText().isEmpty()) {
+				checkParam = Messages.getString("calendar.detail.substitute.time");
+				substituteDateInt = Integer.parseInt(calDetailSubstituteTime.getText());
+				if( substituteDateInt == 0 || substituteDateInt < SUBSTITUTE_DATE_INT_MIN || substituteDateInt > SUBSTITUTE_DATE_INT_MAX) {
+					String[] args = {Messages.getString("calendar.detail.substitute.time"), "0",
+							String.valueOf(SUBSTITUTE_DATE_INT_MIN), String.valueOf(SUBSTITUTE_DATE_INT_MAX)};
+					this.setValidateResult(Messages.getString("message.hinemos.1"), Messages.getString("message.calendar.54",args));
+					return null;
+				}
+				
 			}
-			checkParam = Messages.getString("calendar.detail.substitute.limit");
-			int limit = Integer.parseInt(calDetailSubstituteLimit.getText());
-			if (limit < 1 || limit > 99) {
-				String[] args = {Messages.getString("calendar.detail.substitute.limit"), "1", "99"};
-				this.setValidateResult(Messages.getString("message.hinemos.1"), Messages.getString("message.calendar.52",args));
-				return null;
+			if (calDetailSubstituteCheck.getSelection() || !calDetailSubstituteLimit.getText().isEmpty()) {
+				checkParam = Messages.getString("calendar.detail.substitute.limit");
+				substituteLimiteInt = Integer.parseInt(calDetailSubstituteLimit.getText());
+				if (substituteLimiteInt < 1 || substituteLimiteInt > 99) {
+					String[] args = {Messages.getString("calendar.detail.substitute.limit"), "1", "99"};
+					this.setValidateResult(Messages.getString("message.hinemos.1"), Messages.getString("message.calendar.52",args));
+					return null;
+				}
 			}
 			this.inputData.setSubstituteTime(substituteDateInt);
-			this.inputData.setSubstituteLimit(Integer.valueOf(calDetailSubstituteLimit.getText()));
+			this.inputData.setSubstituteLimit(substituteLimiteInt);
 		} catch (Exception e) {
 			String[] args = {checkParam};
 			this.setValidateResult(Messages.getString("message.hinemos.1"),

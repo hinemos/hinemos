@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -682,8 +683,8 @@ public class InstanceUpdater {
 				if (HinemosPropertyCommon.xcloud_node_property_platformfamily_update.getBooleanValue()) {
 					String oldValue = nodeInfo.getPlatformFamily();
 					String newValue = instanceEntity.getPlatform().label();
- 					if(newValue != Instance.Platform.unknown.label() &&
- 							((null==oldValue && null!=newValue) || (null!=oldValue && !oldValue.equals(newValue)))){
+					if (!Objects.equals(newValue, Instance.Platform.unknown.label())
+							&& !Objects.equals(oldValue, newValue)) {
  						nodeInfo.setPlatformFamily(newValue);
 						changeLog.append("PlatformFamily:").append(oldValue).append("->").append(newValue).append(";");
 					}
@@ -1233,7 +1234,7 @@ public class InstanceUpdater {
 							}
 						}
 					} catch (Exception e) {
-						throw ErrorCode.AUTOUPDATE_NOT_DELETE_FACILITY.cloudManagerFault(e, instance.getCloudScopeId(), instance.getLocationId(), instance.getFacilityId(), CloudManagerException.getMessage(e));
+						throw ErrorCode.AUTOUPDATE_NOT_DELETE_FACILITY.cloudManagerFault(e, instance.getCloudScopeId(), instance.getLocationId(), instance.getFacilityId(), e.getMessage());
 					}
 				}
 				notifier.completed();

@@ -245,12 +245,12 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 		}
 		// レスポンスコードを確認し、200以外なら適切なINTERNALを出力
 		if (response.getCode() == 400) {
-			log.warn("runAzure(): Invalid setting:" + responseBody);
+			log.warn("runAzure(): Bad Request:" + responseBody);
 			if (!hasNotifiedBDC) {
 				String[] args = { config.getTable(), config.getCol() };
 				CloudLogMonitorUtil.sendMessage(config, PriorityConstant.TYPE_WARNING,
 						MessageConstant.AGENT.getMessage(),
-						MessageConstant.MESSAGE_CLOUD_LOG_MONITOR_FAILED_NO_RESOURCE.getMessage(args), responseBody);
+						MessageConstant.MESSAGE_CLOUD_LOG_MONITOR_FAILED_UNKNOWN.getMessage(args), responseBody);
 				hasNotifiedBDC = true;
 			}
 			return;
@@ -263,8 +263,8 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 				hasNotifiedINC = true;
 			}
 			return;
-		} else if (response.getCode() == 204 || response.getCode() == 404) {
-			log.warn("runAzure():" + responseBody);
+		} else if (response.getCode() == 404) {
+			log.warn("runAzure(): Not Found:" + responseBody);
 			if (!hasNotifiedRNF) {
 				String[] args = { config.getWorkspaceName(), config.getTable() };
 				CloudLogMonitorUtil.sendMessage(config, PriorityConstant.TYPE_WARNING,
@@ -273,7 +273,17 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 				hasNotifiedRNF = true;
 			}
 			return;
-
+		} else if (response.getCode() == 204) {
+			// 204はエラーとはせずINFOで通知を返す。回復通知も行わない。
+			log.info("runAzure(): No Content:" + responseBody);
+			if (!hasNotifiedNC) {
+				String[] args = { config.getWorkspaceName() };
+				CloudLogMonitorUtil.sendMessage(config, PriorityConstant.TYPE_INFO,
+						MessageConstant.AGENT.getMessage(),
+						MessageConstant.MESSAGE_CLOUD_LOG_MONITOR_NO_CONTENT.getMessage(args), responseBody);
+				hasNotifiedNC = true;
+			}
+			return;
 		} else if (response.getCode() == 200) {
 			log.debug("run(): Succeed:" + responseBody);
 		} else {
@@ -320,7 +330,17 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 		@SuppressWarnings("unchecked")
 		HashMap<String, ArrayList<HashMap<String, ArrayList<Object>>>> obj = tmpMap;
 		int tableIndex = getTableIndex(obj, cols);
-		
+		if (tableIndex < 0) {
+			// 200 空の本文が返ってきた場合は、リクエストのJSON本文やヘッダが欠落しているという状態のためエラーとする。(実際には起こり得ない)
+			log.warn("runAzure(): Empty body:" + responseBody);
+			if (!hasNotifiedTPE) {
+				CloudLogMonitorUtil.sendMessage(config, PriorityConstant.TYPE_WARNING,
+						MessageConstant.AGENT.getMessage(),
+						MessageConstant.MESSAGE_CLOUD_LOG_MONITOR_FAILED_UNKNOWN.getMessage(), responseBody);
+				hasNotifiedTPE = true;
+			}
+			return;
+		}
 		// カラム情報をフォーマットして、
 		// 一時ファイルに書き出し
 		try {
@@ -359,6 +379,7 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 		hasNotifiedOthers = false;
 		hasNotifiedTPE = false;
 		hasNotifiedCNF = false;
+		hasNotifiedNC = false;
 
 		return;
 	}
@@ -375,6 +396,10 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 		// テーブル一覧を取得
 		ArrayList<HashMap<String, ArrayList<Object>>> tableList = obj.get("Tables");
 
+		if (tableList.size() == 0) {
+			// "Tables"のサイズが0の場合、ステータスコード200の空の本文が返って来ているため、エラーとする。
+			return -1;
+		}
 		int tableIndex = 0;
 		boolean found = false;
 		for (HashMap<String, ArrayList<Object>> tableMap : tableList) {
@@ -447,12 +472,15 @@ public class CloudLogMonitorRunAzure extends AbstractCloudLogMonitorRun {
 			// カラムから取得してきた要素をString型にキャスト
 			ArrayList<String> tmp = new ArrayList<String>();
 			for(Object o : (ArrayList<Object>)t.get(i)){
-				if(o instanceof String){
-					tmp.add((String)o);
-				} else {
-					// カラムの種別によりString型以外の場合があるので明示的に変換
-					tmp.add(o.toString());
-				}
+			    if (o == null) {
+			        // カラムがnullの場合は空白にする
+			        tmp.add("");
+			    } else if (o instanceof String) {
+			        tmp.add((String) o);
+			    } else {
+			        // カラムの種別によりString型以外の場合があるので明示的に変換
+			        tmp.add(o.toString());
+			    }
 			}
 
 			Date parsedDate = null;

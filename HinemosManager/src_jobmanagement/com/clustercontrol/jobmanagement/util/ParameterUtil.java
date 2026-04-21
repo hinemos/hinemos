@@ -400,10 +400,11 @@ public class ParameterUtil {
 	 * @return
 	 * @throws JobInfoNotFound
 	 */
-	private static Map<String, String> getJobSessionMap(List<String> paramIdList, String sessionId) throws JobInfoNotFound {
+	private static Map<String, String> getJobSessionMap(List<String> paramIdList, JobInfoEntity info) throws JobInfoNotFound {
 		JobSessionEntity jobSessionEntity = null;
 		Map<String, String> params = new HashMap<String, String>();
 		Locale locale = NotifyUtil.getNotifyLocale();
+		String sessionId = info.getId().getSessionId();
 		
 		DateFormat df = DateFormat.getDateTimeInstance();
 		df.setTimeZone(HinemosTime.getTimeZone());
@@ -411,7 +412,19 @@ public class ParameterUtil {
 		if (StringBinder.containsParam(paramIdList, SystemParameterConstant.SESSION_ID)) {
 			params.put(SystemParameterConstant.SESSION_ID, sessionId);
 		}
-		
+
+		if (StringBinder.containsParam(paramIdList, SystemParameterConstant.JOBUNIT_ID)) {
+			params.put(SystemParameterConstant.JOBUNIT_ID, info.getId().getJobunitId());
+		}
+
+		if (StringBinder.containsParam(paramIdList, SystemParameterConstant.JOB_ID)) {
+			params.put(SystemParameterConstant.JOB_ID, info.getId().getJobId());
+		}
+
+		if (StringBinder.containsParam(paramIdList, SystemParameterConstant.JOB_NAME)) {
+			params.put(SystemParameterConstant.JOB_NAME, info.getJobName());
+		}
+
 		if (StringBinder.containsParam(paramIdList, SystemParameterConstant.START_DATE) ||
 				StringBinder.containsParam(paramIdList, SystemParameterConstant.TRIGGER_TYPE) ||
 				StringBinder.containsParam(paramIdList, SystemParameterConstant.TRIGGER_INFO)) {
@@ -429,7 +442,7 @@ public class ParameterUtil {
 				}
 			}
 		}
-		
+
 		if (StringBinder.containsParam(paramIdList, SystemParameterConstant.START_DATE)) {
 			params.put(SystemParameterConstant.START_DATE, df.format(jobSessionEntity.getScheduleDate()));
 		}
@@ -616,16 +629,16 @@ public class ParameterUtil {
 	 * @throws HinemosUnknown
 	 * @throws FacilityNotFound 
 	 */
-	public static String replaceAllSessionParameterValue(String sessionId, String jobunitId, String facilityId, String source) 
+	public static String replaceAllSessionParameterValue(JobInfoEntity info, String facilityId, String source) 
 			throws JobInfoNotFound, HinemosUnknown, FacilityNotFound, InvalidRole {
 		String commandConv = source;	// 変換後文字列
 		// ジョブ変数
-		commandConv = ParameterUtil.replaceSessionParameterValue(sessionId, facilityId, commandConv);
+		commandConv = ParameterUtil.replaceSessionParameterValue(info, facilityId, commandConv);
 		try {
 			// 変数#[END_NUM:jobId]
-			commandConv = ParameterUtil.replaceEndNumParameter(sessionId, jobunitId, commandConv, false);
+			commandConv = ParameterUtil.replaceEndNumParameter(info.getId().getSessionId(), info.getId().getJobunitId(), commandConv, false);
 			// 変数#[RETURN:jobId:facilityId]
-			commandConv = ParameterUtil.replaceReturnCodeParameter(sessionId, jobunitId, commandConv, false);
+			commandConv = ParameterUtil.replaceReturnCodeParameter(info.getId().getSessionId(), info.getId().getJobunitId(), commandConv, false);
 		} catch (JobInfoNotFound e) {
 			// ここは通らない
 		}
@@ -638,6 +651,8 @@ public class ParameterUtil {
 	 * 引数で指定された文字列のパラメータIDを値で置き換えます。
 	 *
 	 * @param sessionId セッションID
+	 * @param jobId ジョブID
+	 * @param jobName ジョブ名
 	 * @param facilityId ファシリティID
 	 * @param source 置き換え対象文字列
 	 * @return 置き換え後の文字列
@@ -645,9 +660,12 @@ public class ParameterUtil {
 	 * @throws HinemosUnknown
 	 * @throws FacilityNotFound 
 	 */
-	public static String replaceSessionParameterValue(String sessionId, String facilityId, String source) 
+	public static String replaceSessionParameterValue(JobInfoEntity info, String facilityId, String source) 
 			throws JobInfoNotFound, HinemosUnknown, FacilityNotFound, InvalidRole {
 		// Local Variables
+		String sessionId = info.getId().getSessionId();
+		String jobid = info.getId().getJobId();
+		String jobName = info.getJobName();
 		String commandOrig = source;	// 変換前文字列
 		String commandConv = source;	// 変換後文字列
 		int maxReplaceWord = HinemosPropertyCommon.replace_param_max.getIntegerValue().intValue();
@@ -680,7 +698,7 @@ public class ParameterUtil {
 		// ジョブセッション変数情報用変数
 		Map<String, String> jobSessionParamsMap = getJobSessionParamsMap(sessionId);
 		// ジョブセッション情報用変数
-		Map<String, String> jobSessionMap = getJobSessionMap(inKeyList, sessionId);
+		Map<String, String> jobSessionMap = getJobSessionMap(inKeyList, info);
 		
 		// 存在するパラメータ分処理を行う。
 		for (String paramId : list) {

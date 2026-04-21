@@ -82,12 +82,17 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 		ArrayList<TableColumnInfo> tableColumnList = m_viewer.getTableColumnList();
 
 		TableColumnInfo tableColumn = tableColumnList.get(columnIndex);
-
+		
 		if (value == null) {
 			return "";
 		}
-
-		if (tableColumn.getType() == TableColumnInfo.JOB) {
+		
+		if (tableColumn.getType() == TableColumnInfo.TYPEICON_JOBNAME) {
+			if(value instanceof JobInfoWrapper){
+				return ((JobInfoWrapper)value).getName();
+			}
+			return "";
+		} else if (tableColumn.getType() == TableColumnInfo.JOB) {
 			//データタイプが「ジョブ」の処理
 			if(value instanceof JobInfoWrapper.TypeEnum){
 				return JobMessage.typeEnumValueToString(((JobInfoWrapper.TypeEnum) value).getValue());
@@ -212,8 +217,13 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 		if (value == null || value.equals("")) {
 			return null;
 		}
-
-		if (tableColumn.getType() == TableColumnInfo.JOB) {
+		
+		if (tableColumn.getType() == TableColumnInfo.TYPEICON_JOBNAME) {
+			if(value instanceof JobInfoWrapper){
+				return JobImageConstant.typeEnumValueToImage(((JobInfoWrapper)value).getType().getValue());
+			}
+			return null;
+		} else if (tableColumn.getType() == TableColumnInfo.JOB) {
 			//データタイプが「ジョブ」の処理
 			if(value instanceof JobInfoWrapper.TypeEnum){
 				return JobImageConstant.typeEnumValueToImage((((JobInfoWrapper.TypeEnum) value).getValue()));
@@ -259,7 +269,6 @@ public class JobTableTreeLabelProvider extends LabelProvider implements ICommonT
 			//データタイプが「予定」の処理
 			return ScheduleOnOffImageConstant.dateToImage(((Date) value));
 		}
-
 		return null;
 	}
 

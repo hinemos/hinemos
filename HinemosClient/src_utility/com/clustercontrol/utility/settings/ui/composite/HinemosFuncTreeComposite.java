@@ -49,6 +49,8 @@ public class HinemosFuncTreeComposite extends Composite {
 	/** チェックされている収集項目を保持 */
 	private List<FuncInfo> itemList;
 
+	private Combo combo = null;
+
 	/** イベントリスナ */
 	//Listener subItemCheckListener;
 	//Listener ItemCheckDisableListener;
@@ -153,7 +155,7 @@ public class HinemosFuncTreeComposite extends Composite {
 		label.setLayoutData(gridData);
 		label.setText(Messages.getString("string.manager") + " : ");
 		
-		Combo combo = new Combo(managerCompoiste, SWT.READ_ONLY);
+		combo = new Combo(managerCompoiste, SWT.READ_ONLY);
 		gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
@@ -267,6 +269,28 @@ public class HinemosFuncTreeComposite extends Composite {
 	 */
 	public Tree getTree() {
 		return m_viewer.getTree();
+	}
+
+	/**
+	 * ツリーのプルダウンに自動で有効なマネージャが選択された状態にします。
+	 * 
+	 */
+	public void selectDefaultManager() {
+		// ログアウト時にcurrentManagerNameが空文字になるのでその場合はnullを設定する
+		// ここでnullが設定された場合、後続の処理で有効なマネージャが設定される
+		if ("".equals(UtilityManagerUtil.getCurrentManagerName())) {
+			UtilityManagerUtil.setCurrentManagerName(null);
+		}
+		// currentManagerNameをビューの「マネージャ」プルダウンにセットする
+		// currentManagerNameがnullの場合は有効なマネージャがセットされる
+		String name = UtilityManagerUtil.getCurrentManagerName();
+		if (name != null) {
+			// 「マネージャ」プルダウンにマネージャを追加し選択された状態にする
+			combo.add(name);
+			combo.select(combo.indexOf(name));
+			// チェックされた項目をクリアする
+			itemList.clear();
+		}
 	}
 
 	/**

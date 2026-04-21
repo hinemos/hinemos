@@ -362,6 +362,10 @@ public class CloudLogMonitor implements Runnable {
 	 * エージェント停止時に使用することを想定しています。
 	 */
 	public boolean shutdownWorkers() {
+		if (runMonitor != null) {
+			// 監視の終了処理を行う
+			runMonitor.shutdown();
+		}
 		boolean hasTimeout = false;
 		_scheduler.shutdown();
 		_executorService.shutdown();

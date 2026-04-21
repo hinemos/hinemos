@@ -34,5 +34,7 @@ public class NodeFigure extends FacilityFigure {
 				" : " + getFacilityElementProperty("IpNetworkNumberV6"));
 		addTooltip(com.clustercontrol.nodemap.messages.Messages.getString("tooltip.nodename") +
 				" : " + getFacilityElementProperty("NodeName"));
+		// レイアウトを再計算し適切なサイズで表示されるようにする
+		super.getTooltip().validate();
 	}
 }

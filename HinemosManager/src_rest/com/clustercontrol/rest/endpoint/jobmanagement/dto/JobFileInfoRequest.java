@@ -11,6 +11,7 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
 import com.clustercontrol.rest.dto.RequestDto;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ProcessingMethodEnum;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /* 
  * 本クラスのRestXXアノテーション、correlationCheckを修正する場合は、Infoクラスも同様に修正すること。
@@ -59,7 +60,8 @@ public class JobFileInfoRequest implements RequestDto {
 	private Boolean messageRetryEndFlg = false;
 
 	/** コマンド実行失敗時終了値 */
-	private Integer messageRetryEndValue = 0;
+	@JsonIgnore
+	private Integer messageRetryEndValue = -1;
 
 	public JobFileInfoRequest() {
 	}

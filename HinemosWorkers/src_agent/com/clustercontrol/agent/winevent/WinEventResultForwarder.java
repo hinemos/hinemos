@@ -156,7 +156,7 @@ public class WinEventResultForwarder {
 			return;
 		}
 
-		transporter.add(result);
+		transporter.addWithWait(result);
 	}
 
 	private static class WinEventResultProcessor implements TransportProcessor<MonitorResult> {

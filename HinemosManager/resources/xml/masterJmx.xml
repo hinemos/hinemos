@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<JmxMaster><schemaInfo><schemaType>G</schemaType><schemaVersion>1</schemaVersion><schemaRevision>1</schemaRevision></schemaInfo><JmxMasterInfo masterId="JMX_HINEMOS_CUSTOM_TRAP_QUEUE_COUNT" objectName="com.clustercontrol.mbean:type=ManagerMXBean" attributeName="CustomTrapQueueCount" keys="" name="$[JMX_CUSTOM_TRAP_QUEUE_COUNT]" measure="$[COUNTS]"/></JmxMaster>

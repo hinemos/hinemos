@@ -146,11 +146,11 @@ public class RepositoryControllerBeanWrapper extends RepositoryControllerBean {
 		List<ScopeInfo> ret;
 		if (autoCommit) {
 			try (TransactionScope scope = new TransactionScope(Transactional.TransactionOption.RequiredNew)) {
-				ret = super.deleteScope(facilityIds);
+				ret = super.deleteScope(facilityIds, false);
 				scope.complete();
 			}
 		} else {
-			ret = super.deleteScope(facilityIds);
+			ret = super.deleteScope(facilityIds, false);
 		}
 		return ret;
 	}

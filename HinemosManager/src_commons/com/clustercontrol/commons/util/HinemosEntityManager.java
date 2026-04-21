@@ -687,6 +687,22 @@ public class HinemosEntityManager implements EntityManager {
 
 		return;
 	}
+	
+	/**
+	 * 
+	 * キャッシュ用のオブジェクト権限チェック処理
+	 * 
+	 * @param entityClass
+	 *            検索対象のEntityクラス
+	 * @param primaryKey
+	 *            検索対象の主キー
+	 * @param mode
+	 *            オブジェクト権限のモード(READ、WRITE、EXEC)
+	 * 
+	 */
+	public <T> void privilegeCheck(Class<T> entityClass, Object primaryKey, ObjectPrivilegeMode mode) {
+		objectPrivilegeCheck(entityClass, primaryKey, mode);
+	}
 
 	/**
 	 * オブジェクト権限を付加したQueryの取得

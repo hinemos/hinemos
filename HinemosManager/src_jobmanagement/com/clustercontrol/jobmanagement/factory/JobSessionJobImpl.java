@@ -20,8 +20,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
@@ -94,6 +97,8 @@ public class JobSessionJobImpl {
 	private static final ILock _lock;
 
 	private static final String DELAY_SKIP_RESULT = "DelaySkip";
+
+	private static final String WAIT_JOB_END = ":waitJobEnd";
 
 	static {
 		ILockManager lockManager = LockManagerFactory.instance().create();
@@ -742,6 +747,54 @@ public class JobSessionJobImpl {
 			throw e;
 		}
 
+		// 特定の名前のジョブ変数があるかチェック
+		/// JobWaitInfoEntityと待ち条件群の条件判定を保持する
+		Map<JobWaitInfoEntity, Integer> waitJobEndJobParamMap = checkWaitMode(waitGroups);
+		// 6.2モードのフラグ
+		boolean waitPredecessorJobMode = !waitJobEndJobParamMap.isEmpty();
+
+		// 先行ジョブの判定結果を保持する
+		Map<JobWaitInfoEntity, ReturnValue> predecessorJobCheckResultMap = new HashMap<>();
+
+		// 先行ジョブと判定が保留されたジョブ変数のチェック結果を保持する
+		Map<JobWaitInfoEntity, ReturnValue> checkedMap = new HashMap<>();
+
+		if (waitPredecessorJobMode) {
+			// 先行ジョブをチェックする。チェック結果は保持
+			predecessorJobCheckResultMap = checkPredecessorJobStatus(waitGroups, jobId, jobId, jobId, sessionJob);
+			checkedMap.putAll(predecessorJobCheckResultMap);
+
+			// パラメータ設定したジョブ変数の先行ジョブが終了しているかチェック
+			Set<Entry<JobWaitInfoEntity, Integer>> waitConditionEntrySet = waitJobEndJobParamMap.entrySet();
+			for (Entry<JobWaitInfoEntity, Integer> jobparamEntry : waitConditionEntrySet) {
+				JobWaitInfoEntity jobparam = jobparamEntry.getKey();
+				for (Map.Entry<JobWaitInfoEntity, ReturnValue> entry : predecessorJobCheckResultMap.entrySet()) {
+					JobWaitInfoEntity jobWaitInfoEntity = entry.getKey();
+					ReturnValue value = entry.getValue();
+
+					// 先行ジョブのうち1つでも
+					if (value != ReturnValue.NONE) {
+						continue;
+					}
+
+					// 判定対象の条件関係：AND
+					if (job.getConditionType() == ConditionTypeConstant.TYPE_AND
+							&& !jobparam.getId().getOrderNo().equals(jobWaitInfoEntity.getId().getOrderNo())) {
+						// 先行ジョブ未完了
+						checkedMap.put(jobparam, ReturnValue.NONE);
+						break;
+					}
+					// 条件判定：AND
+					if (waitJobEndJobParamMap.get(jobparam) == ConditionTypeConstant.TYPE_AND
+							&& jobparam.getId().getOrderNo().equals(jobWaitInfoEntity.getId().getOrderNo())) {
+						// 先行ジョブ未完了
+						checkedMap.put(jobparam, ReturnValue.NONE);
+						break;
+					}
+				}
+			}
+		}
+
 		// 待ち条件群の判定を行う
 		List<ReturnValue> groupReturnValueList = new ArrayList<>();
 		ReturnValue groupReturnValue = null;
@@ -756,6 +809,14 @@ public class JobSessionJobImpl {
 			List<ReturnValue> infoReturnValueList = new ArrayList<>();
 			ReturnValue infoReturnValue = null;
 			for (JobWaitInfoEntity wait : waitGroup.getJobWaitInfoEntities()) {
+				// 6.2モードだった場合にはすでに判定済みの結果を格納する
+				if (waitPredecessorJobMode) {
+					if (checkedMap.containsKey(wait)) {
+						infoReturnValueList.add(checkedMap.get(wait));
+						continue;
+					}
+				}
+
 				m_log.debug("checkWaitCondition() : id=" + wait.getId().toString());
 				if (wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS
 						|| wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE
@@ -926,6 +987,89 @@ public class JobSessionJobImpl {
 	}
 
 	/**
+	 * パラメータ:watJobEndを含むジョブ変数かどうかのチェックを行い
+	 * 該当した待ち条件のエンティティと所属する待ち条件群の条件判定を返す
+	 * 
+	 * @param waitGroups
+	 * @return Map<JobWaitInfoEntity, Integer>
+	 */
+	private Map<JobWaitInfoEntity, Integer> checkWaitMode(Collection<JobWaitGroupInfoEntity> waitGroups) {
+		Map<JobWaitInfoEntity, Integer> waitModeParamMap = new HashMap<>();
+		// 正規表現パターンを作成。
+		String regex = "#\\[\\s*.*" + WAIT_JOB_END + ".*\\s*\\]";
+		Pattern pattern = Pattern.compile(regex);
+
+		for (JobWaitGroupInfoEntity waitGroup : waitGroups) {
+			for (JobWaitInfoEntity wait : waitGroup.getJobWaitInfoEntities()) {
+				if (wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_PARAMETER) {
+					// 判定値1のチェック
+					String paramName1 = wait.getDecisionValue01();
+					if (paramName1 != null) {
+						// Matcherオブジェクトを取得
+						Matcher matcher1 = pattern.matcher(paramName1);
+						if (matcher1.find()) {
+							waitModeParamMap.put(wait, waitGroup.getConditionType());
+							if (m_log.isDebugEnabled()) {
+								m_log.debug("checkWaitPredecessorJobMode() : id=" + wait.getId().toString());
+							}
+							continue;
+						}
+					}
+					// 判定値2のチェック
+					String paramName2 = wait.getDecisionValue02();
+					if (paramName2 != null) {
+						// Matcherオブジェクトを取得
+						Matcher matcher2 = pattern.matcher(paramName2);
+						if (matcher2.find()) {
+							waitModeParamMap.put(wait, waitGroup.getConditionType());
+							if (m_log.isDebugEnabled()) {
+								m_log.debug("checkWaitPredecessorJobMode() : id=" + wait.getId().toString());
+							}
+						}
+					}
+				}
+			}
+		}
+		return waitModeParamMap;
+	}
+
+
+	/**
+	 * 待ち条件群内（ジョブ終了）のチェック
+	 * ジョブを指定する待ち条件についての判定を行い、エンティティと判定結果を返す
+	 * 
+	 * @param waitGroups
+	 * @param sessionId
+	 * @param jobunitId
+	 * @param jobId
+	 * @param sessionJob
+	 * @return Map<JobWaitInfoEntity, ReturnValue>
+	 * @throws JobInfoNotFound
+	 * @throws InvalidRole
+	 * @throws HinemosUnknown
+	 */
+	private Map<JobWaitInfoEntity, ReturnValue> checkPredecessorJobStatus(Collection<JobWaitGroupInfoEntity> waitGroups,
+			String sessionId, String jobunitId, String jobId, JobSessionJobEntity sessionJob)
+			throws JobInfoNotFound, InvalidRole, HinemosUnknown {
+		Map<JobWaitInfoEntity, ReturnValue> predecessorJobCheckResultMap = new HashMap<>();
+		for (JobWaitGroupInfoEntity waitGroup : waitGroups) {
+			for (JobWaitInfoEntity wait : waitGroup.getJobWaitInfoEntities()) {
+				if (wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_END_STATUS
+						|| wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_END_VALUE
+						|| wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_STATUS
+						|| wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_CROSS_SESSION_JOB_END_VALUE
+						|| wait.getId().getTargetJobType() == JudgmentObjectConstant.TYPE_JOB_RETURN_VALUE) {
+					// 待ち条件群内のジョブを指定する待ち条件についての判定
+					predecessorJobCheckResultMap.put(wait,
+							checkWaitJobEnd(sessionId, jobunitId, jobId, sessionJob, wait));
+				}
+			}
+		}
+		return predecessorJobCheckResultMap;
+	}
+	
+	
+	/**
 	 * 待ち条件群内（ジョブ終了）のチェック
 	 * ジョブを指定する待ち条件についての判定を行う
 	 * 
@@ -1007,8 +1151,7 @@ public class JobSessionJobImpl {
 		// ファシリティIDが正規表現にマッチするか検証する
 		if (decisionFacilityId != null && pattern.matcher(decisionFacilityId).find()) {
 			// ファシリティIDの置換
-			decisionFacilityId = ParameterUtil.replaceSessionParameterValue(sessionId, decisionFacilityId,
-					decisionFacilityId);
+			decisionFacilityId = ParameterUtil.replaceSessionParameterValue(job, decisionFacilityId, decisionFacilityId);
 
 			// ファシリティIDが置換されているかどうか再度検証し、置換されていなければ次の判定処理まで待機
 			if (pattern.matcher(decisionFacilityId).find()) {
@@ -1018,7 +1161,7 @@ public class JobSessionJobImpl {
 		// 判定値1の置換後の文字列
 		String replacementValue01 = "";
 		// 判定値1を置換する
-		replacementValue01 = replaceValue(sessionId, jobunitId, wait.getDecisionValue01(), decisionFacilityId);
+		replacementValue01 = replaceValue(sessionId, jobunitId, job, wait.getDecisionValue01(), decisionFacilityId);
 		if(replacementValue01 == null){
 			return ReturnValue.NONE;
 		}
@@ -1041,7 +1184,7 @@ public class JobSessionJobImpl {
 			// カンマ区切りの値を置換する
 			if (stringValueList.size() > 0) {
 				for (String value : stringValueList) {
-					String replacementValue = replaceValue(sessionId, jobunitId, value, decisionFacilityId);
+					String replacementValue = replaceValue(sessionId, jobunitId, job, value, decisionFacilityId);
 					if (replacementValue == null) {
 						return ReturnValue.NONE;
 					}
@@ -1051,11 +1194,11 @@ public class JobSessionJobImpl {
 			// コロン区切りの値を置換する
 			if (stringValueRangeList.size() > 0) {
 				for (String[] value : stringValueRangeList) {
-					String replacementValueMin = replaceValue(sessionId, jobunitId, value[0], decisionFacilityId);
+					String replacementValueMin = replaceValue(sessionId, jobunitId, job, value[0], decisionFacilityId);
 					if (replacementValueMin == null) {
 						return ReturnValue.NONE;
 					}
-					String replacementValueMax = replaceValue(sessionId, jobunitId, value[1], decisionFacilityId);
+					String replacementValueMax = replaceValue(sessionId, jobunitId, job, value[1], decisionFacilityId);
 					if (replacementValueMax == null) {
 						return ReturnValue.NONE;
 					}
@@ -1072,7 +1215,7 @@ public class JobSessionJobImpl {
 		} else {
 			// 判定値2の置換後の文字列
 			String replacementValue02 = "";
-			replacementValue02 = replaceValue(sessionId, jobunitId, wait.getDecisionValue02(), decisionFacilityId);
+			replacementValue02 = replaceValue(sessionId, jobunitId, job, wait.getDecisionValue02(), decisionFacilityId);
 			if (replacementValue02 == null) {
 				return ReturnValue.NONE;
 			}
@@ -1102,18 +1245,22 @@ public class JobSessionJobImpl {
 	 * @throws FacilityNotFound
 	 * @throws InvalidRole
 	 */
-	private String replaceValue(String sessionId, String jobunitId, String value,
+	private String replaceValue(String sessionId, String jobunitId, JobInfoEntity job, String value,
 			String decisionFacilityId) throws JobInfoNotFound, HinemosUnknown, FacilityNotFound, InvalidRole {
 		String replacementValue;
 		// 判定値が正規表現にマッチするか検証する
 		if (pattern.matcher(value).find()) {
+			//:waitJobEndは不要のため置換前に削除する
+			if(value.contains(WAIT_JOB_END)){
+				value = value.replace(WAIT_JOB_END,"");
+			}
 			/*
 			 * 判定値の置換
 			 *  変数#[END_NUM:jobId]、変数#[RETURN:jobId:facilityId]ではジョブが終了していない場合に
 			 *  文字列"null"で変換されるため、個々に判定する。
 			 */
 			// ジョブ変数
-			replacementValue = ParameterUtil.replaceSessionParameterValue(sessionId, decisionFacilityId, value);
+			replacementValue = ParameterUtil.replaceSessionParameterValue(job, decisionFacilityId, value);
 			// 変数#[END_NUM:jobId]
 			try {
 				replacementValue = ParameterUtil.replaceEndNumParameter(sessionId, jobunitId, replacementValue, true);

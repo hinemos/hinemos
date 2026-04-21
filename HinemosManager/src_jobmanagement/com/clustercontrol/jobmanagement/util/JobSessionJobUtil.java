@@ -438,8 +438,23 @@ public class JobSessionJobUtil {
 	 * @param resetRunCount true: 実行回数をリセットする、false: 実行回数をリセットしない
 	 */
 	public static void resetJobStatus(JobSessionJobEntity sessionJob, boolean resetRunCount) {
-		//状態を「待機」戻し、終了状態、終了値、開始・終了日時、実行回数をクリアしておく
-		sessionJob.setStatus(StatusConstant.TYPE_WAIT);
+		
+		// 状態をリセットする
+		if (!resetRunCount) {
+			//最上位の場合は実行回数をリセットするフラグがfalseのため、それをもとに待機中の判断とする
+			sessionJob.setStatus(StatusConstant.TYPE_WAIT);
+		} else if(sessionJob.getJobInfoEntity().getSuspend() != null && sessionJob.getJobInfoEntity().getSuspend().booleanValue()) {
+			//保留
+			sessionJob.setStatus(StatusConstant.TYPE_RESERVING);
+		} else if(sessionJob.getJobInfoEntity().getSkip() != null && sessionJob.getJobInfoEntity().getSkip().booleanValue()) {
+			//スキップ
+			sessionJob.setStatus(StatusConstant.TYPE_SKIP);
+		} else {
+			//保留・スキップ以外
+			sessionJob.setStatus(StatusConstant.TYPE_WAIT);
+		}
+
+		//終了状態、終了値、開始・終了日時、実行回数をクリアしておく
 		sessionJob.setEndStatus(null);
 		sessionJob.setEndValue(null);
 		sessionJob.setStartDate(null);

@@ -69,6 +69,19 @@ public class FacilityTreeAttributeConstant {
 	public static final String UNALLOCATED_SCOPE="UNALLOCATED";
 	public static final String UNALLOCATED_SCOPE_TEXT="Unallocated_Node";
 
+	public static final String OCI_OCI="OCI";
+	public static final String OCI_INSTANCEPOOL="INSTANCE_POOL";
+	public static final String OCI_BASEDB_SYSTEM="BASEDB_SYSTEM";
+	public static final String OCI_BASEDB_DATABASE="BASEDB_DATABASE";
+	
+	public static final String GOOGLECLOUD_GOOGLECLOUD="GOOGLECLOUD";
+	public static final String GOOGLECLOUD_CLOUDSQL="CLOUDSQL";
+	public static final String GOOGLECLOUD_INSTANCEGROUP="INSTANCE_GROUP";
+	public static final String GOOGLECLOUD_GAE="GAE";
+	public static final String GOOGLECLOUD_CLOUDFUNCTION="CLOUDFUNCTION";
+
+	public static final String KVM_KVM="KVM";
+
 	/**
 	 * RPAスコープ
 	 */
@@ -85,6 +98,7 @@ public class FacilityTreeAttributeConstant {
 	public static final String VALID="ccValid";
 	
 	private static Set<String> buildinScopeFacilityIdSet;
+	private static final Set<String> platformMasterScopeFacilityIdSet;
 	
 	static {
 		buildinScopeFacilityIdSet = new HashSet<String>();
@@ -122,12 +136,48 @@ public class FacilityTreeAttributeConstant {
 		buildinScopeFacilityIdSet.add(VMWARE_VSPHERE);
 		buildinScopeFacilityIdSet.add(VMWARE_VCENTER);
 		buildinScopeFacilityIdSet.add(VMWARE_ESXI);
+
+		platformMasterScopeFacilityIdSet = new HashSet<String>();
+		platformMasterScopeFacilityIdSet.add(OS_LINUX_SCOPE);
+		platformMasterScopeFacilityIdSet.add(OS_WINDOWS_SCOPE);
+		platformMasterScopeFacilityIdSet.add(OS_ANDROID_SCOPE);
+		platformMasterScopeFacilityIdSet.add(OS_NW_SCOPE);
+		platformMasterScopeFacilityIdSet.add(OS_OTHER_SCOPE);
+		platformMasterScopeFacilityIdSet.add(AWS_AWS);
+		platformMasterScopeFacilityIdSet.add(AWS_ELB);
+		platformMasterScopeFacilityIdSet.add(AWS_RDS);
+		platformMasterScopeFacilityIdSet.add(AWS_ALB);
+		platformMasterScopeFacilityIdSet.add(AWS_NLB);
+		platformMasterScopeFacilityIdSet.add(GOOGLECLOUD_GOOGLECLOUD);
+		platformMasterScopeFacilityIdSet.add(GOOGLECLOUD_CLOUDSQL);
+		platformMasterScopeFacilityIdSet.add(GOOGLECLOUD_INSTANCEGROUP);
+		platformMasterScopeFacilityIdSet.add(GOOGLECLOUD_GAE);
+		platformMasterScopeFacilityIdSet.add(GOOGLECLOUD_CLOUDFUNCTION);
+		platformMasterScopeFacilityIdSet.add(KVM_KVM);
+		platformMasterScopeFacilityIdSet.add(OCI_OCI);
+		platformMasterScopeFacilityIdSet.add(OCI_INSTANCEPOOL);
+		platformMasterScopeFacilityIdSet.add(OCI_BASEDB_SYSTEM);
+		platformMasterScopeFacilityIdSet.add(OCI_BASEDB_DATABASE);
+		platformMasterScopeFacilityIdSet.add(AZURE_AZURE);
+		platformMasterScopeFacilityIdSet.add(AZURE_VMSS);
+		platformMasterScopeFacilityIdSet.add(AZURE_WEBAPP);
+		platformMasterScopeFacilityIdSet.add(AZURE_FUNCTIONAPP);
+		platformMasterScopeFacilityIdSet.add(AZURE_SQLDB);
+		platformMasterScopeFacilityIdSet.add(HYPERV);
+		platformMasterScopeFacilityIdSet.add(VMWARE_VSPHERE);
+		platformMasterScopeFacilityIdSet.add(VMWARE_VCENTER);
+		platformMasterScopeFacilityIdSet.add(VMWARE_ESXI);
 	}
 	
 	public static Set<String> getBuiltinScopeFacilityIdSet() {
 		return buildinScopeFacilityIdSet;
 	}
 	
+
+	public static Set<String> getPlatformMasterScopeFacilityIdSet() {
+		return new HashSet<>(platformMasterScopeFacilityIdSet);
+	}
+
 	/**
 	 * 組み込みスコープかどうかを判定するメソッド<br>
 	 * 

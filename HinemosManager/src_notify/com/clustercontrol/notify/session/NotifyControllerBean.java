@@ -1301,6 +1301,8 @@ public class NotifyControllerBean implements CheckFacility {
 			String mailSubject = sendMail.getSubject(outputBasicInfo, null);
 			String mailBody = sendMail.getContentWithMessageOrg(outputBasicInfo);
 
+			sendMail.setFacilityId(outputBasicInfo.getFacilityId());
+
 			if("INTERNAL".equals(outputBasicInfo.getFacilityId())) {
 				List<Integer> list = MultiSmtpServerUtil.getRoleServerList(outputBasicInfo.getFacilityId());
 				Boolean sendAll = MultiSmtpServerUtil.isSendAll();
@@ -1377,7 +1379,6 @@ public class NotifyControllerBean implements CheckFacility {
 	 * @param application アプリケーション
 	 * @param message メッセージ
 	 * @param messageOrg オリジナルメッセージ
-	 * @param notifyIdList 通知IDのリスト
 	 * @param srcId 送信元を特定するためのID
 	 * @throws FacilityNotFound
 	 * @throws NotifyNotFound
@@ -1394,8 +1395,7 @@ public class NotifyControllerBean implements CheckFacility {
 			String application,
 			String message,
 			String messageOrg,
-			ArrayList<String> notifyIdList,
-			String srcId) throws FacilityNotFound, HinemosUnknown, NotifyNotFound, InvalidRole {
+			String srcId) throws FacilityNotFound, HinemosUnknown, InvalidRole {
 		m_log.info("notify() "
 				+ "pluginId = " + pluginId
 				+ ", monitorId = " + monitorId
@@ -1430,9 +1430,6 @@ public class NotifyControllerBean implements CheckFacility {
 		} else if(messageOrg == null){
 			m_log.info("notify() Invalid argument. messageOrg is null.");
 			return;
-		} else if(notifyIdList == null){
-			m_log.info("notify() Invalid argument. notifyIdList is null.");
-			return;
 		}
 
 		if(subKey == null){
@@ -1449,11 +1446,6 @@ public class NotifyControllerBean implements CheckFacility {
 
 			// 指定のファシリティIDが存在するか確認
 			new RepositoryControllerBean().getFacilityEntityByPK(facilityId);
-
-			// 指定の通知設定が存在するか確認
-			for(String notifyId : notifyIdList){
-				QueryUtil.getNotifyInfoPK(notifyId);
-			}
 
 			output.setApplication(application);
 			output.setFacilityId(facilityId);
@@ -1505,7 +1497,7 @@ public class NotifyControllerBean implements CheckFacility {
 			jtm.addCallback(new NotifyCallback(output));
 
 			jtm.commit();
-		} catch (NotifyNotFound | InvalidRole | FacilityNotFound | HinemosUnknown e) {
+		} catch (InvalidRole | FacilityNotFound | HinemosUnknown e) {
 			if (jtm != null){
 				jtm.rollback();
 			}

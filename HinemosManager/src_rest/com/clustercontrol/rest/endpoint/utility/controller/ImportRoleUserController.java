@@ -10,6 +10,7 @@ package com.clustercontrol.rest.endpoint.utility.controller;
 import java.util.List;
 
 import com.clustercontrol.accesscontrol.session.AccessControllerBean;
+import com.clustercontrol.accesscontrol.util.RoleValidator;
 import com.clustercontrol.rest.endpoint.utility.dto.ImportRoleUserRecordRequest;
 import com.clustercontrol.rest.endpoint.utility.dto.RecordRegistrationResponse;
 import com.clustercontrol.rest.util.RestCommonValitater;
@@ -30,6 +31,8 @@ public class ImportRoleUserController extends AbstractImportController<ImportRol
 		RestCommonValitater.checkRequestDto(importRec.getImportData());
 		importRec.getImportData().correlationCheck();
 
+		RoleValidator.validateUserAssignAdminRole(importRec.getRoleId());
+		
 		List<String> userIdList = importRec.getImportData().getUserIdList();
 		new AccessControllerBean().assignUserRole(importRec.getRoleId(),
 				userIdList.toArray(new String[userIdList.size()]));

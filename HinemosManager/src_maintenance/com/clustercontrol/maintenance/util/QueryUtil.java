@@ -8,10 +8,19 @@
 
 package com.clustercontrol.maintenance.util;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,16 +33,27 @@ import com.clustercontrol.fault.HinemosPropertyNotFound;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.MaintenanceNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
+import com.clustercontrol.jobmanagement.model.JobSessionEntity;
 import com.clustercontrol.maintenance.model.HinemosPropertyInfo;
 import com.clustercontrol.maintenance.model.MaintenanceInfo;
 import com.clustercontrol.maintenance.model.MaintenanceTypeMst;
 
+import jakarta.persistence.Cache;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Query;
 
 public class QueryUtil {
 	/** ログ出力のインスタンス */
 	private static Log m_log = LogFactory.getLog( QueryUtil.class );
 
+	/** ジョブ履歴削除に併せてキャッシュを削除するエンティティのセット */
+	private static final Set<Class<?>> JOB_SESSION_EVICT_SET;
+	static {
+		JOB_SESSION_EVICT_SET = Collections.unmodifiableSet(listCascadeEntities(JobSessionEntity.class));
+	}
 
 	public static MaintenanceTypeMst getMaintenanceTypeMstPK(String typeId) throws MaintenanceNotFound {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
@@ -125,12 +145,11 @@ public class QueryUtil {
 	public static List<Date> selectTargetDateCollectStringDataByDateTimeAndMonitorId(Long dateTime, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<Long> list = em.createNamedQuery("CollectStringData.selectTargetDateByDateTimeAndMonitorId",
-					Long.class, ObjectPrivilegeMode.NONE)
+			return em.createNamedQuery("CollectStringData.selectTargetDateByDateTimeAndMonitorId",
+					Date.class, ObjectPrivilegeMode.NONE)
 					.setParameter("dateTime", dateTime)
 					.setParameter("monitorId", monitorId)
 					.getResultList();
-			return getTargetDateListByUnixTimeLsit(list);
 		}
 	}
 	
@@ -150,11 +169,10 @@ public class QueryUtil {
 	public static List<Date> selectTargetDateCollectStringDataByDateTime(Long dateTime) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<Long> list = em.createNamedQuery("CollectStringData.selectTargetDateDateTime",
-					Long.class, ObjectPrivilegeMode.NONE)
+			return em.createNamedQuery("CollectStringData.selectTargetDateDateTime",
+					Date.class, ObjectPrivilegeMode.NONE)
 					.setParameter("dateTime", dateTime)
 					.getResultList();
-			return getTargetDateListByUnixTimeLsit(list);
 		}
 	}
 	
@@ -240,12 +258,11 @@ public class QueryUtil {
 	public static List<Date> selectTargetDateCollectDataByDateTimeAndMonitorId(Long dateTime, String monitorId) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<Long> list = em.createNamedQuery("CollectData.selectTargetDateByDateTimeAndMonitorId",
-					Long.class, ObjectPrivilegeMode.NONE)
+			return em.createNamedQuery("CollectData.selectTargetDateByDateTimeAndMonitorId",
+					Date.class, ObjectPrivilegeMode.NONE)
 					.setParameter("dateTime", dateTime)
 					.setParameter("monitorId", monitorId)
 					.getResultList();
-			return getTargetDateListByUnixTimeLsit(list);
 		}
 	}
 	
@@ -265,11 +282,10 @@ public class QueryUtil {
 	public static List<Date> selectTargetDateCollectDataByDateTime(Long dateTime) {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			HinemosEntityManager em = jtm.getEntityManager();
-			List<Long> list = em.createNamedQuery("CollectData.selectTargetDateByDateTime",
-					Long.class, ObjectPrivilegeMode.NONE)
+			return em.createNamedQuery("CollectData.selectTargetDateByDateTime",
+					Date.class, ObjectPrivilegeMode.NONE)
 					.setParameter("dateTime", dateTime)
 					.getResultList();
-			return getTargetDateListByUnixTimeLsit(list);
 		}
 	}
 	
@@ -887,8 +903,92 @@ public class QueryUtil {
 			HinemosEntityManager em = jtm.getEntityManager();
 			int ret = em.createNamedQuery("JobSessionEntity.deleteByJobCompletedSessions")
 					.executeUpdate();
+
+			// ジョブ履歴関連のエンティティは、persistence.xmlにてEclipseLinkの2次キャッシュを使用するように定義されている。
+			// 本ジョブ履歴の削除処理では、NativeQueryを使用してジョブ履歴を削除するが、
+			// その結果、削除したジョブがキャッシュに残存する。
+			// EntityManagerのremove()メソッドを使用すればキャッシュも同時に削除されるが、
+			// ジョブ履歴の削除は大量データになる可能性があり、性能面での考慮からNativeQueryでの削除が必要。
+			// このため、NativeQueryでの削除後にキャッシュを明示的に削除する方法で対応する。
+			// キャッシュの削除が必要なエンティティは、persistence.xmlに定義されているジョブ履歴関連のエンティティとなるが、
+			// persistence.xmlに定義されていないエンティティでも、JobSessionEntityに関連するエンティティは削除対象とする。
+			Cache cache = em.getEntityManagerFactory().getCache();
+			for (Class<?> clazz : JOB_SESSION_EVICT_SET) {
+				cache.evict(clazz);
+			}
+
 			return ret;
 		}
+	}
+
+	/**
+	 * 指定されたルートエンティティを起点に、EclipseLinkの2次キャッシュをリフレクションを使って関連エンティティを取得し、セットとして返す。
+	 * 
+	 * @param rootEntity
+	 *            ルートエンティティ
+	 * @return 関連するエンティティのセット
+	 */
+	public static Set<Class<?>> listCascadeEntities(Class<?> rootEntity) {
+		Set<Class<?>> classes = new HashSet<>();
+
+		if (!rootEntity.isAnnotationPresent(Entity.class)) {
+			return Collections.emptySet();
+		}
+
+		classes.add(rootEntity);
+		for (Method method : rootEntity.getMethods()) {
+			OneToOne oto = method.getAnnotation(OneToOne.class);
+			if (oto != null) {
+				classes.addAll(processOneToOneAnnotation(oto, method));
+				continue;
+			}
+
+			OneToMany otm = method.getAnnotation(OneToMany.class);
+			if (otm != null) {
+				classes.addAll(processOneToManyAnnotation(otm, method));
+			}
+
+		}
+		return classes;
+	}
+
+	private static Set<Class<?>> processOneToOneAnnotation(OneToOne oto, Method method) {
+		if (Arrays.stream(oto.cascade()).anyMatch(c -> CascadeType.ALL.equals(c) || CascadeType.REMOVE.equals(c))) {
+			Class<?> returnType = method.getReturnType();
+			return listCascadeEntities(returnType);
+		}
+		return Collections.emptySet();
+	}
+
+	private static Set<Class<?>> processOneToManyAnnotation(OneToMany otm, Method method) {
+		if (Arrays.stream(otm.cascade()).anyMatch(c -> CascadeType.ALL.equals(c) || CascadeType.REMOVE.equals(c))) {
+			Class<?> returnType = method.getReturnType();
+			if (returnType.isArray()) {
+				Class<?> componentType = returnType.getComponentType();
+				return listCascadeEntities(componentType);
+			} else if (Collection.class.isAssignableFrom(returnType)) {
+				Type t = method.getGenericReturnType();
+				if (t instanceof ParameterizedType) {
+					ParameterizedType pt = (ParameterizedType) t;
+					Type typeArg = pt.getActualTypeArguments()[0];
+					if (typeArg instanceof Class) {
+						Class<?> paramClass = (Class<?>) typeArg;
+						return listCascadeEntities(paramClass);
+					}
+				}
+			} else if (Map.class.isAssignableFrom(returnType)) {
+				Type t = method.getGenericReturnType();
+				if (t instanceof ParameterizedType) {
+					ParameterizedType pt = (ParameterizedType) t;
+					Type typeArg = pt.getActualTypeArguments()[1];
+					if (typeArg instanceof Class) {
+						Class<?> paramClass = (Class<?>) typeArg;
+						return listCascadeEntities(paramClass);
+					}
+				}
+			}
+		}
+		return Collections.emptySet();
 	}
 
 	public static int deleteNotifyRelationInfoByCompletedSessions() {

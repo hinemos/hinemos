@@ -157,7 +157,7 @@ public class LogfileResultForwarder {
 			return;
 		}
 
-		transporter.add(result);
+		transporter.addWithWait(result);
 	}
 
 	private static class LogfileResultProcessor implements TransportProcessor<MonitorResult> {

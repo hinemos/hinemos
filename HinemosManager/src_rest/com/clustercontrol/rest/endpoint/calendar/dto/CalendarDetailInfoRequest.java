@@ -221,5 +221,14 @@ public class CalendarDetailInfoRequest implements RequestDto {
 	
 	@Override
 	public void correlationCheck() throws InvalidSetting {
+		// 「振り替え」が無効な場合、振り替え間隔と振り替え上限が未入力なら画面の新規登録時のデフォルト値で補完する
+		if (substituteFlg != null && !substituteFlg) {
+			if (substituteTime == null) {
+				substituteTime = 24;
+			}
+			if (substituteLimit == null) {
+				substituteLimit = 10;
+			}
+		}
 	}
 }

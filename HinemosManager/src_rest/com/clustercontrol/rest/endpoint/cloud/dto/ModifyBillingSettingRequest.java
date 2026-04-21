@@ -10,6 +10,7 @@ package com.clustercontrol.rest.endpoint.cloud.dto;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.clustercontrol.commons.util.StringUtil;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.annotation.RestItemName;
 import com.clustercontrol.rest.annotation.validation.RestValidateInteger;
@@ -57,6 +58,16 @@ public class ModifyBillingSettingRequest implements RequestDto {
 
 	@Override
 	public void correlationCheck() throws InvalidSetting {
+		if (billingDetailCollectorFlg != null && billingDetailCollectorFlg) {
+			for (OptionRequest op : options) {
+				if (StringUtil.isNullOrEmpty(op.getName())) {
+					throw new InvalidSetting("set option name.");
+				}
+				if (StringUtil.isNullOrEmpty(op.getValue())) {
+					throw new InvalidSetting("set "+op.getName()+" value.");
+				}
+			}
+		}
 	}
 
 }

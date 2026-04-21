@@ -16,12 +16,12 @@ public class CloudMessage {
 	private static final String ESCAPE = ".";
 	
 	public static String getMessage(String key, String... args) {
-		String ret = PREFIX + key;
-
+		StringBuilder ret = new StringBuilder(PREFIX);
+		ret.append(key);
 		for (String arg : args) {
-			ret += DELIMITER + ARGS_SEPARATOR + arg + ARGS_SEPARATOR;
+			ret.append(DELIMITER).append(ARGS_SEPARATOR).append(arg).append(ARGS_SEPARATOR);
 		}
-		return ret + POSTFIX;
+		return ret.append(POSTFIX).toString();
 	}
 	
 	public static String escape (String s) {

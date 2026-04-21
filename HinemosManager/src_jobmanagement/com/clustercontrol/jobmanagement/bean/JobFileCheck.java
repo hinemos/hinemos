@@ -181,14 +181,17 @@ public class JobFileCheck extends JobKick implements Serializable {
 	}
 	@Override
 	public String toString() {
-		String str = null;
-		str += "type=" + type;
+		String str = "JobFileCheck [";
+		str += "id=" + super.getId();
+		str += " ,valid=" + super.isValid();
+		str += " ,type=" + type;
 		str += " ,facilityId=" + facilityId;
 		str += " ,directory=" + directory;
 		str += " ,fileName=" + fileName;
 		str += " ,eventType=" + eventType;
 		str += " ,modifyType=" + modifyType;
 		str += " ,carryOverJudgmentFlg=" + carryOverJudgmentFlg;
+		str += "]";
 		return str;
 	}
 }

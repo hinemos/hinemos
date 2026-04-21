@@ -75,7 +75,17 @@ public class DeleteJobAction extends BaseAction {
 		JobMapTreeComposite tree = view.getJobMapTreeComposite();
 		tree.refresh(parent);
 		tree.getTreeViewer().setSelection( new StructuredSelection(parent), true);
-		tree.updateJobMapEditor(null);
+		// ジョブマップに表示されているジョブを削除した場合、画面にはその親ジョブを表示させる
+		// それ以外のケースでは、ジョブマップに表示されているジョブはそのままとする
+		JobTreeItemWrapper currentItem = JobMapActionUtil.getJobMapEditorView().getCanvasComposite()
+				.getJobTreeItemVisibleOnJobMap();
+		if (currentItem != null) {
+			if (currentItem.getData().equals(item.getData())) {
+				tree.updateJobMapEditor(parent);
+			} else {
+				tree.updateJobMapEditor(null);
+			}
+		}
 
 		return null;
 	}

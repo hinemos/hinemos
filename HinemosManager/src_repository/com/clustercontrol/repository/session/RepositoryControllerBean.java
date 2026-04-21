@@ -2043,7 +2043,7 @@ public class RepositoryControllerBean {
 	 * @throws FacilityNotFound
 	 * @throws HinemosUnknown
 	 */
-	public List<ScopeInfo> deleteScope(String[] facilityIds) throws UsedFacility, InvalidRole, FacilityNotFound, HinemosUnknown {
+	public List<ScopeInfo> deleteScope(String[] facilityIds, boolean isPlatformMaster) throws UsedFacility, InvalidRole, FacilityNotFound, HinemosUnknown {
 		JpaTransactionManager jtm = null;
 		List<ScopeInfo> retList = new ArrayList<>();
 
@@ -2057,7 +2057,11 @@ public class RepositoryControllerBean {
 
 			/** メイン処理 */
 			for (String facilityId : facilityIds) {
-				checkIsBuildInScope(facilityId);
+				if (isPlatformMaster) {
+					checkIsUserAddedPlatformMasterScope(facilityId);
+				} else {
+					checkIsBuildInScope(facilityId);
+				}
 				checkIsUseFacilityWithChildren(facilityId);
 				FacilityModifier.deleteScope(facilityId, (String)HinemosSessionContext.instance().getProperty(HinemosSessionContext.LOGIN_USER_ID));
 
@@ -3286,6 +3290,37 @@ public class RepositoryControllerBean {
 			HinemosUnknown e = new HinemosUnknown("this facility is built in scope. (facilityId = " + facilityId + ")");
 			m_log.info("deleteScopeRecursive() : "
 					+ e.getClass().getSimpleName() + ", " + e.getMessage());
+			throw e;
+		}
+	}
+
+	/**
+	 * 引数で与えられたファシリティIDのノードがユーザによって追加されたプラットフォームマスタのスコープでない場合は
+	 * HinemosUnknownを送出します。
+	 *
+	 * @param facilityId チェックを行う対象のファシリティID
+	 * @throws FacilityNotFound
+	 * @throws HinemosUnknown
+	 */
+	public void checkIsUserAddedPlatformMasterScope(String facilityId) throws FacilityNotFound, HinemosUnknown {
+		if (facilityId == null || facilityId.isEmpty()) {
+			throw new HinemosUnknown("facilityId is null or empty.");
+		}
+		// 「OS別スコープ配下のスコープ」であるか
+		boolean isOsScope = QueryUtil.getChildFacilityEntity(FacilityTreeAttributeConstant.OS_PARENT_SCOPE).stream()
+				.anyMatch(f -> facilityId.equals(f.getFacilityId()));
+		// 「デフォルトのプラットフォームマスタのスコープ」であるか
+		boolean isDefaultPlatform = FacilityTreeAttributeConstant.getPlatformMasterScopeFacilityIdSet()
+				.contains(facilityId);
+
+		// 「OS別スコープ配下のスコープ」でない or 「デフォルトのプラットフォームマスタのスコープ」である
+		// この場合、「ユーザによって追加されたプラットフォームマスタのスコープ」でないため、削除できないようにする
+		if (!isOsScope || isDefaultPlatform) {
+			HinemosUnknown e = new HinemosUnknown(
+					"this facility is not the platform master scope added by the user. (facilityId = " + facilityId
+							+ ")");
+			m_log.warn(
+					"checkIsUserAddedPlatformMasterScope() : " + e.getClass().getSimpleName() + ", " + e.getMessage());
 			throw e;
 		}
 	}

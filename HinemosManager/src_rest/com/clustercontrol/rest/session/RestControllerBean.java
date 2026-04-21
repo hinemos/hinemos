@@ -16,8 +16,10 @@ import com.clustercontrol.commons.util.HinemosEntityManager;
 import com.clustercontrol.commons.util.HinemosSessionContext;
 import com.clustercontrol.commons.util.JpaTransactionManager;
 import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.rest.model.RestAgentRequestEntity;
 import com.clustercontrol.util.HinemosTime;
 
+import jakarta.persistence.EntityManager;
 
 /**
  * RESTに関連する機能の管理を行う Session Bean クラス<BR>
@@ -48,7 +50,7 @@ public class RestControllerBean {
 
     /**
      * エージェントからのリクエストを登録。リクエストの重複受信防止用<BR>
-     *
+     * 
      * @param requestId リクエストの個体識別子。
      * @param agentId Hinemosエージェントの個体識別子。
      * @param systemFunction 呼び出し元で任意に設定可能な文字列(64文字以内)。
@@ -101,7 +103,36 @@ public class RestControllerBean {
 		
 		return true;
 	}
-	
+
+	/**
+	 * リクエストの登録
+	 */
+	public void addRestAgentRequest(String requestId, String agentId, String systemFunction, String resourceMethod) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			EntityManager em = jtm.getEntityManager();
+			RestAgentRequestEntity entity = new RestAgentRequestEntity(requestId);
+			entity.setAgentId(agentId);
+			entity.setResourceMethod(resourceMethod);
+			entity.setSystemFunction(systemFunction);
+			entity.setRegDate(HinemosTime.currentTimeMillis());
+			em.persist(entity);
+		}
+	}
+
+	/**
+	 * リクエストの照会
+	 * 
+	 */
+	public RestAgentRequestEntity findRestAgentRequest(String requestId) {
+		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
+			HinemosEntityManager em = jtm.getEntityManager();
+
+			// 同一リクエストIDを取得する
+			RestAgentRequestEntity ret = em.find(RestAgentRequestEntity.class, requestId, ObjectPrivilegeMode.NONE);
+			return ret;
+		}
+	}
+
 	/**
 	 * 登録後、保持時間が経過したリクエストのデータを廃棄<BR>
 	 *
@@ -164,5 +195,13 @@ public class RestControllerBean {
 			if (jtm != null)
 				jtm.close();
 		}
+	}
+	
+	public String getAgentRequestId() {
+		return (String) HinemosSessionContext.instance().getProperty(RestHeaderConstant.AGENT_REQUEST_ID);
+	}
+	
+	public String getAgentIdentifier() {
+		return (String) HinemosSessionContext.instance().getProperty(RestHeaderConstant.AGENT_IDENTIFIER);
 	}
 }

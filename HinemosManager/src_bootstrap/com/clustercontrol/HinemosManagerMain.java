@@ -207,7 +207,8 @@ public class HinemosManagerMain {
 			HinemosTime.setTimeOffsetMillis(offset);
 			
 			// Hinemos独自のタイムゾーン(UTCからのオフセット)をプロパティから取得/設定(ミリ秒単位)
-			int timeZoneOffset = HinemosPropertyCommon.common_timezone.getIntegerValue();
+			int timeZoneOffsetValue = HinemosPropertyCommon.common_timezone.getIntegerValue();
+			int timeZoneOffset = (timeZoneOffsetValue / 1000) * 1000;
 			HinemosTime.setTimeZoneOffset(timeZoneOffset);
 
 			// クラウドサービスモード用の設定ファイル読み込み(読み込むためにシングルトンインスタンスを取得）

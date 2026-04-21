@@ -1,0 +1,39 @@
+{
+"annotations":[
+	{"type":"Element"}
+],
+"props":[
+	
+	{
+	"propName":"host",
+	"annotations":[
+		{"type":"Column", "columnName":"KvmType_host"}
+	]},
+	
+	{
+	"propName":"port",
+	"annotations":[
+		{"type":"Column", "columnName":"KvmType_port"}
+	]},
+	
+	{
+	"propName":"mode",
+	"annotations":[
+		{"type":"Column", "columnName":"KvmType_mode"}
+	]},
+	
+	{
+	"propName":"extraParameters",
+	"annotations":[
+		{"type":"Column", "columnName":"KvmType_extraParameters"}
+	]},
+	
+	{
+	"propName":"kvmUser",
+	"annotations":[
+		{"type":"Column", "columnName":"CloudScopeBaseInfoType_accountId"},
+		{"type":"Array", "idType":"props", "props":["accountId"]},
+		{"type":"Ignore", "propNames":["accountId"]}
+	]}
+]
+}

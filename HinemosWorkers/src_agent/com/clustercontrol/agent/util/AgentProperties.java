@@ -96,6 +96,32 @@ public class AgentProperties {
 		return properties.getProperty(key, defaultValue);
 	}
 
+	public interface Validator<T> {
+		boolean validate(T value);
+	}
+
+	/**
+	 * 指定されたキーを持つプロパティを取得し、long値として返します。
+	 * @param key プロパティキー
+	 * @param defaultValue defaultValue デフォルト値
+	 * @return 指定されたキー値を持つこのプロパティリストの値
+	 */
+	public static Long getPropertyLongValue(String key, long defaultValue, Validator<Long> validation){
+		String str = getProperty(key);
+		long value = defaultValue;
+		try {
+			value = Long.parseLong(str);
+			if (validation != null && !validation.validate(value)) {
+				value = defaultValue;
+			}
+		} catch (NumberFormatException e) {
+			value = defaultValue;
+		} finally {
+			m_log.info(key + " uses value \"" + value + "\". (configuration = \"" + str + "\")");
+		}
+		return value;
+	}
+
 	/**
 	 * Agent.propertiesのプロパティ情報をそのまま渡す
 	 * @return

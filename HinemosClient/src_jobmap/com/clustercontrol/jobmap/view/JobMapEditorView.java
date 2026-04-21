@@ -14,13 +14,12 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
 import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
-import com.clustercontrol.jobmap.view.action.CreateJobLinkRcvJobAction;
-import com.clustercontrol.jobmap.view.action.CreateJobLinkSendJobAction;
 import com.clustercontrol.jobmap.view.action.CreateApprovalJobAction;
 import com.clustercontrol.jobmap.view.action.CreateFileCheckJobAction;
-import com.clustercontrol.jobmap.view.action.CreateMonitorJobAction;
 import com.clustercontrol.jobmap.view.action.CreateFileJobAction;
 import com.clustercontrol.jobmap.view.action.CreateJobAction;
+import com.clustercontrol.jobmap.view.action.CreateJobLinkRcvJobAction;
+import com.clustercontrol.jobmap.view.action.CreateJobLinkSendJobAction;
 import com.clustercontrol.jobmap.view.action.CreateJobNetAction;
 import com.clustercontrol.jobmap.view.action.CreateJobUnitAction;
 import com.clustercontrol.jobmap.view.action.CreateMonitorJobAction;
@@ -32,8 +31,8 @@ import com.clustercontrol.jobmap.view.action.EditModeAction;
 import com.clustercontrol.jobmap.view.action.JobObjectPrivilegeAction;
 import com.clustercontrol.jobmap.view.action.ModifyJobAction;
 import com.clustercontrol.jobmap.view.action.RunJobAction;
-import com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommand;
-import com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommand;
+import com.clustercontrol.utility.jobutil.ui.views.commands.ExportJobCommandJobTree;
+import com.clustercontrol.utility.jobutil.ui.views.commands.ImportJobCommandJobTree;
 
 /**
  * ノードマップビューを描画するためのクラス。
@@ -86,8 +85,8 @@ public class JobMapEditorView extends JobMapView {
 			service.refreshElements(JobObjectPrivilegeAction.ID, null);
 			service.refreshElements(RunJobAction.ID, null);
 			service.refreshElements(EditModeAction.ID, null);
-			service.refreshElements(ImportJobCommand.ID, null);
-			service.refreshElements(ExportJobCommand.ID, null);
+			service.refreshElements(ImportJobCommandJobTree.ID, null);
+			service.refreshElements(ExportJobCommandJobTree.ID, null);
 
 			// Update ToolBar after elements refreshed
 			// WARN : Both ToolBarManager must be updated after updateActionBars(), otherwise icon won't change.

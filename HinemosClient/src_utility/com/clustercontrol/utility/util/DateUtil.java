@@ -12,6 +12,8 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -218,5 +220,38 @@ public class DateUtil {
 			throw e;
 		}
 	}
-	
+
+	/**
+	 * 日付文字列("yyyy/m/d"等)に対して、ゼロパディング処理等を実施し、"yyyy/mm/dd" 形式に変換します。
+	 * 月と日が一桁の場合はゼロ詰めします。
+	 *
+	 * @param dateStr
+	 *            変換する日付文字列。"yyyy/m/d" または "yyyy/mm/dd" の形式を期待します。
+	 * @return "yyyy/mm/dd" の 日付文字列。 
+	 *          入力が {@code null} の場合は {@code null}を返し、
+	 *          日付文字列の形式が期待と一致しない場合は元の文字列を返します。
+	 */
+	public static String convertDateZeroPadding(String dateStr) {
+		if (dateStr == null) {
+			return null;
+		}
+
+		final Pattern DATE_PATTERN = Pattern.compile("(\\d{4})/(\\d{1,2})/(\\d{1,2})");
+		// Matcherを生成してマッチングを行う
+		Matcher matcher = DATE_PATTERN.matcher(dateStr);
+
+		// 変換処理
+		StringBuffer result = new StringBuffer();
+		if (matcher.find()) {
+			String year = matcher.group(1);
+			String month = String.format("%02d", Integer.parseInt(matcher.group(2)));
+			String day = String.format("%02d", Integer.parseInt(matcher.group(3)));
+			matcher.appendReplacement(result, year + "/" + month + "/" + day);
+			matcher.appendTail(result);
+			return result.toString();
+		} else {
+			// 形式が一致しない場合は、元の文字列をそのまま返す
+			return dateStr;
+		}
+	}
 }

@@ -24,10 +24,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
@@ -301,18 +303,17 @@ public abstract class AbstractReadingStatusDir<T extends AbstractFileMonitorInfo
 			return;
 		}
 
-		List<File> rsFileList = new ArrayList<>(Arrays.asList(filesFiles));
+		Set<String> fileNames = new HashSet<>();
 		for (String fileName : statusMap.keySet()) {
-			String[] fileNames = { fileName + ".t", fileName + ".f"};
-			for(String fn : fileNames) {
-				Iterator<File> iter = rsFileList.iterator();
-				while (iter.hasNext()) {
-					File f = iter.next();
-					if (f.getName().equals(fn)) {
-						iter.remove();
-						break;
-					}
-				}
+			fileNames.add(fileName + ".t");
+			fileNames.add(fileName + ".f");
+		}
+		List<File> rsFileList = new ArrayList<>(Arrays.asList(filesFiles));
+		Iterator<File> iter = rsFileList.iterator();
+		while (iter.hasNext()) {
+			File f = iter.next();
+			if (fileNames.contains(f.getName())) {
+				iter.remove();
 			}
 		}
 

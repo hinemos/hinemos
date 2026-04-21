@@ -2059,7 +2059,8 @@ public class RpaControllerBean implements CheckFacility{
 			}
 			throw new InvalidSetting(
 					String.format("%s %s", 
-					MessageConstant.MESSAGE_FAILED_TO_MODIFY.getMessage()
+					MessageConstant.MESSAGE_FAILED_TO_MODIFY.getMessage(
+							MessageConstant.RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING.getMessage())
 					, e.getMessage()));
 		} catch (RpaScenarioOperationResultCreateSettingDuplicate e) {
 			if (jtm != null) {
@@ -2076,7 +2077,7 @@ public class RpaControllerBean implements CheckFacility{
 			if (jtm != null) {
 				jtm.rollback();
 			}
-			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage());
+			throw e;
 		} catch (FacilityNotFound e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -2164,7 +2165,7 @@ public class RpaControllerBean implements CheckFacility{
 			if (jtm != null) {
 				jtm.rollback();
 			}
-			throw new InvalidRole(MessageConstant.MESSAGE_DO_NOT_HAVE_ENOUGH_PERMISSION.getMessage());
+			throw e;
 		} catch (FacilityNotFound e) {
 			if (jtm != null) {
 				jtm.rollback();
@@ -2182,7 +2183,8 @@ public class RpaControllerBean implements CheckFacility{
 			}
 			throw new InvalidSetting(
 					String.format("%s %s", 
-					MessageConstant.MESSAGE_FAILED_TO_MODIFY.getMessage()
+					MessageConstant.MESSAGE_FAILED_TO_MODIFY.getMessage(
+							MessageConstant.RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING.getMessage())
 					, e.getMessage()));
 		} catch (Exception e) {
 			if (jtm != null) {

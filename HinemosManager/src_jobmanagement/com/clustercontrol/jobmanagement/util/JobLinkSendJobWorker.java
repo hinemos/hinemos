@@ -264,14 +264,8 @@ public class JobLinkSendJobWorker {
 	 *            セッションID
 	 */
 	public static void removeInfoBySessionId(String sessionId) {
-		if (sessionId == null || sessionId.isEmpty()) {
-			return;
-		}
-
-		/** RunHistory削除 */
-		for (RunInstructionInfo runInstructionInfo : RunHistoryUtil.findRunHistoryBySessionId(sessionId)) {
-			RunHistoryUtil.delRunHistory(runInstructionInfo);
-		}
+		// NOP
+		// ジョブ連携送信ジョブでは個別に削除が必要な情報がない
 	}
 
 	/**

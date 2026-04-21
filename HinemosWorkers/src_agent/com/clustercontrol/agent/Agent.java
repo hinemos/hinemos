@@ -30,6 +30,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -41,10 +42,14 @@ import org.openapitools.client.model.AgentInfoRequest;
 import org.openapitools.client.model.AgentInfoRequest.DhcpUpdateModeEnum;
 import org.openapitools.client.model.AgentJavaInfoRequest;
 import org.openapitools.client.model.AgtOutputBasicInfoRequest;
+import org.openapitools.client.model.SendMessageRequest;
 
 import com.clustercontrol.agent.SendQueue.MessageSendableObject;
 import com.clustercontrol.agent.bean.DhcpUpdateMode;
 import com.clustercontrol.agent.binary.BinaryMonitorManager;
+import com.clustercontrol.agent.cloud.InstanceCheck;
+import com.clustercontrol.agent.cloud.InstanceCheck.UnresolvedIdException;
+import com.clustercontrol.agent.cloud.InstanceCheckAWS;
 import com.clustercontrol.agent.cloud.log.CloudLogMonitorManager;
 import com.clustercontrol.agent.filecheck.FileCheckManager;
 import com.clustercontrol.agent.job.RunHistoryUtil;
@@ -54,7 +59,9 @@ import com.clustercontrol.agent.rpa.scenariojob.ScreenshotThread;
 import com.clustercontrol.agent.sdml.SdmlFileMonitorManager;
 import com.clustercontrol.agent.selfcheck.SelfCheckManager;
 import com.clustercontrol.agent.util.AgentProperties;
+import com.clustercontrol.agent.util.AgentRequestId;
 import com.clustercontrol.agent.util.PropertiesFileUtil;
+import com.clustercontrol.agent.util.SpecifiedTimesRetryStrategy;
 import com.clustercontrol.agent.winevent.WinEventMonitorManager;
 import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
@@ -64,8 +71,10 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.InvalidUserPass;
 import com.clustercontrol.fault.RestConnectFailed;
 import com.clustercontrol.repository.bean.AgentCommandConstant;
+import com.clustercontrol.util.EnvUtil;
 import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.xcloud.bean.CloudConstant;
 /**
  * エージェントメインクラス<BR>
  * 
@@ -134,6 +143,15 @@ public class Agent {
 
 	/** マネージャとの接続チェック用のフラグ */
 	private static boolean awakePortFlg = false;
+
+	/** リソースID取得時のリトライ回数用のキー */
+	private static final String GET_RESOURCE_ID_RETRY_COUNT_KEY = "xcloud.get.resource.id.retry.count";
+
+	/** リソースID取得時のリトライ回数 デフォルト値 */
+	protected static int DEFAULT_RESOURCE_GET_COUNT = 3;
+
+	/** リソースID取得時の取得失敗時にエージェントプロセスを停止するフラグ用のキー */
+	private static final String STOP_AGENT_FAILED_GET_RESOURCE_ID_KEY = "xcloud.get.resource.id.stop.agent.on.failure";
 	
 	/**
 	 * メイン処理
@@ -262,7 +280,10 @@ public class Agent {
 			agent = new Agent(args[0]);
 			
 			// RPAシナリオジョブのスクリーンショットの削除
-			ScreenshotThread.deleteScreenshotFiles();
+			if (EnvUtil.isWindows()) {
+				// OSがWindowsの場合のみ実行する
+				ScreenshotThread.deleteScreenshotFiles();
+			}
 			
 			// queue生成
 			m_sendQueue = new SendQueue();
@@ -575,7 +596,6 @@ public class Agent {
 			AgentRestConnectManager.setProxyAuchenticator(proxyUser, proxyPassword);
 		}
 
-
 		// 設定ファイルの接続先アドレスに ${ManagerIP} の指定があった場合に限りマネージャからの接続を待ち、
 		// マネージャのPINGを受け取って、接続先マネージャのIPアドレスの設定反映や自身のFacilityIDの書き換えを行う
 		String managerAddress = AgentProperties.getProperty("managerAddress");
@@ -584,9 +604,23 @@ public class Agent {
 		String errMsg = "";
 		if (REPLACE_VALUE_MANAGER_IP.equals((url.getHost()))) {
 			try {
-				
+				String retryCountStr = AgentProperties.getProperty(GET_RESOURCE_ID_RETRY_COUNT_KEY);
+				int retryCount = DEFAULT_RESOURCE_GET_COUNT;
+				try {
+					retryCount = Integer.parseInt(retryCountStr);
+					if (retryCount < 0) {
+						retryCount = DEFAULT_RESOURCE_GET_COUNT;
+					}
+				} catch (NumberFormatException e) {
+					m_log.warn("Set " + GET_RESOURCE_ID_RETRY_COUNT_KEY + " to a positive number. "
+							+ GET_RESOURCE_ID_RETRY_COUNT_KEY + " = " + retryCountStr);
+				}
+				m_log.info(GET_RESOURCE_ID_RETRY_COUNT_KEY + " = " + retryCount);
+
 				// マネージャからのPINGを待ちうけ、正常なPINGが来るまで繰り返し待ち続ける
 				Map<String, String> discoveryInfoMap = new HashMap<String, String>();
+				String[] managerIps;
+				String managerAddressValue;
 				while (true) {
 					m_log.info("waiting for manager connection...");
 					String recvMsg = receiveManagerDiscoveryInfo();
@@ -604,32 +638,93 @@ public class Agent {
 						m_log.error("can't parse receive message : " + e.toString());
 						continue;
 					}
-					if (discoveryInfoMap.containsKey("agentFacilityId") && discoveryInfoMap.containsKey("managerIp")) {
-						break;
-					} else {
-						m_log.error("receive message is invalid");
+					
+					if (!(discoveryInfoMap.containsKey("agentFacilityId") && discoveryInfoMap.containsKey("managerIp"))) {
+						// マネージャから送信される文字列はagentFacilityId,managerIpが含まれている前提のため
+						// マネージャから送られてきた文字情報が途切れている場合などの想定外の場合
+						continue;
 					}
-				}
-				// Agent.propertiesファイルの接続先マネージャの書き換え＋動作中のプロパティの書き換え
-				{
-					String[] managerIps = discoveryInfoMap.get("managerIp").split("\\|");
-					String key = "managerAddress";
-					String value = url.getProtocol() + "://" + managerIps[0] + ":"
+					
+					managerIps = discoveryInfoMap.get("managerIp").split("\\|");
+					managerAddressValue = url.getProtocol() + "://" + managerIps[0] + ":"
 							+ url.getPort() + "/HinemosWeb/";
 					// HAオプションでFIPを利用できない場合の対応
 					// managerIpが「|」区切りで2つ以上連携された場合は接続先マネージャを2件設定
 					// 3つ目以降は切り捨てる
 					if (managerIps.length >= 2) {
-						if (managerIps.length >= 3) {
-							m_log.info("More than two managerIP is specified. Set the first and second value : " + managerIps[0]
-									+ "," + managerIps[1] + " to '" + key + "'.");
-						}
-						value = value + "," + url.getProtocol() + "://" + managerIps[1] + ":"
+						managerAddressValue = managerAddressValue + "," + url.getProtocol() + "://" + managerIps[1] + ":"
 								+ url.getPort() + "/HinemosWeb/";
 					}
-					m_log.info("Rewrite property. key : " + key + ", value : " + value);
-					PropertiesFileUtil.replacePropertyFile(propFileName, key, managerAddress, value);
-					AgentProperties.setProperty(key, value);
+					try {
+						String agentFacilityId = discoveryInfoMap.get("agentFacilityId");
+						String[] splittedAgentFacilityId = agentFacilityId.split("_");
+						if (splittedAgentFacilityId.length < 4) {
+							m_log.warn("Unexpected facility ID format. agentFacilityId=" + agentFacilityId);
+							// _<platformId>_<cloudScopeId>_<resourceId>の形式以外は判別不能のため正とする
+							//クラウドVM管理のファシリティID採番の実施方法が変わらない限り到達しない
+							break;
+						}
+						String platformId = splittedAgentFacilityId[1];
+						InstanceCheck instanceCheck = null;
+							switch (platformId) {
+							case CloudConstant.platform_AWS:
+								instanceCheck = new InstanceCheckAWS(new SpecifiedTimesRetryStrategy(retryCount));
+								break;
+							default:
+								m_log.debug("Platform for which the resource ID cannot be obtained. platformId=" + platformId);
+								// その他のプラットフォームはリソースIDが自身のものか判断する手段がないため正とする
+								instanceCheck = new InstanceCheck(new SpecifiedTimesRetryStrategy(0)) {
+									
+									@Override
+									public boolean judgeResourceId(String agentFacilityId) {
+										return true;
+									}
+								};
+							}
+						if (instanceCheck.judgeResourceId(agentFacilityId)) {
+							break;
+						} else {
+							m_log.error("receive message is invalid");
+							sendInternalEventCheckResourceIdFailed(
+									discoveryInfoMap.get("agentFacilityId"),
+									String.format("Automatic agent registration for this environment has been cancelled because the facility ID submitted for this environment is different from resource ID ."
+											+ "ResourceID=%s\n"
+											+ "IPAddress=%s\n"
+											+ "Hostname=%s",
+											instanceCheck.getResourceId(), getIPAddr(), System.getProperty("hostname")),
+									managerAddressValue,
+									connectTimeout,
+									requestTimeout);
+						}
+					} catch (UnresolvedIdException e) {
+						sendInternalEventCheckResourceIdFailed(
+								discoveryInfoMap.get("agentFacilityId"),
+								String.format("Automatic agent registration has been cancelled because "
+										+ "%s\n"
+										+ "IPAddress=%s\n"
+										+ "Hostname=%s\n"
+										, e.getMessage(), getIPAddr(), System.getProperty("hostname")),
+								managerAddressValue,
+								connectTimeout,
+								requestTimeout);
+						String stopAgentOnFailureStr = AgentProperties.getProperty(STOP_AGENT_FAILED_GET_RESOURCE_ID_KEY);
+						boolean stopAgentOnFailure = Boolean.valueOf(stopAgentOnFailureStr);
+						if (stopAgentOnFailure) {
+							m_log.warn("The agent is stopped because "+ STOP_AGENT_FAILED_GET_RESOURCE_ID_KEY+" is set to true.");
+							System.exit(0);
+						}
+					}
+				}
+				// Agent.propertiesファイルの接続先マネージャの書き換え＋動作中のプロパティの書き換え
+				{
+					String key = "managerAddress";
+					if (managerIps.length >= 3) {
+						m_log.info("More than two managerIP is specified. Set the first and second value : " + managerIps[0]
+								+ "," + managerIps[1] + " to '" + key + "'.");
+					}
+					m_log.info("Rewrite property. key : " + key + ", value : " + managerAddressValue);
+					PropertiesFileUtil.replacePropertyFile(propFileName, key, managerAddress, managerAddressValue);
+					AgentProperties.setProperty(key, managerAddressValue);
 				}
 				
 				// Agent.propertiesファイルのエージェントファシリティID書き換え＋動作中のプロパティの書き換え
@@ -643,7 +738,6 @@ public class Agent {
 				
 				// log4j2.propertiesファイルの書き換え（Windows版エージェントのみ）
 				{
-					String[] managerIps = discoveryInfoMap.get("managerIp").split("\\|");
 					String key = "log4j.appender.syslog.SyslogHost";
 					// HAオプションでFIPを利用できない場合の対応
 					// managerIpが「|」区切りで2つ以上連携された場合は1つ目の値を設定
@@ -733,6 +827,48 @@ public class Agent {
 				LogManager.shutdown();
 			}
 		});
+	}
+
+	/**
+	 * エージェント自動登録に失敗した際にマネージャへ通知する
+	 * マネージャへエージェントとして登録する前のため、マネージャから送られてきた情報を元に一時的に接続情報を作成し通知を行う
+	 * @param agentFacilityId マネージャから送られてきたファシリティID
+	 * @param msg マネージャへ通知するメッセージ
+	 * @param managerUrl 通知するマネージャのURL(マネージャから送られてきたIPアドレスより)
+	 * @param connectTimeout マネージャへ通知する際のコネクションタイムアウト
+	 * @param requestTimeout マネージャへ通知する際のリクエストタイムアウト
+	 */
+	private void sendInternalEventCheckResourceIdFailed(String agentFacilityId, String msg, String managerUrl, int connectTimeout, int requestTimeout) {
+		MessageSendableObject sendme = new MessageSendableObject();
+		sendme.body = new AgtOutputBasicInfoRequest();
+		sendme.body.setPluginId("CLOUD");
+		sendme.body.setPriority(PriorityConstant.TYPE_WARNING);
+		sendme.body.setApplication(MessageConstant.AGENT.getMessage());
+		sendme.body.setMessage(MessageConstant.XCLOUD_CORE_MSG_AUTO_AGENT_REGIST_FAILED.getMessage());
+		sendme.body.setMessageOrg(msg);
+		sendme.body.setGenerationDate(HinemosTime.getDateInstance().getTime());
+		sendme.body.setMonitorId(HinemosModuleConstant.SYSYTEM);
+		sendme.body.setFacilityId(""); // マネージャがセット.
+		sendme.body.setScopeText(""); // マネージャがセット.
+
+		SendMessageRequest req = new SendMessageRequest();
+		AgentInfoRequest info = new AgentInfoRequest();
+		info.setFacilityId(agentFacilityId);
+		req.setAgentInfo(info);
+		req.setOutputBasicInfo(sendme.body);
+		AgentRequestId agentRequestId = new AgentRequestId();
+
+		try {
+			AgentRestConnectManager.init(AgentProperties.getProperty("user"),
+					AgentProperties.getProperty("password"),
+					managerUrl,
+					connectTimeout, requestTimeout);
+			AgentRestClientWrapper.sendMessageToInternalEvent(req, agentRequestId.toRequestHeaderValue(),
+					agentFacilityId);
+		} catch (Exception e) {
+			m_log.warn("call() : sendMessageToInternalEvent occur Exception  Exception=" + e.getClass().getSimpleName()
+					+ ",message=" + e.getMessage());
+		}
 	}
 
 	/**
@@ -937,23 +1073,7 @@ public class Agent {
 			agentInfo.setHostname(hostname);
 
 			// IPアドレス取得
-			Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-			ArrayList<String> newIpAddressList = new ArrayList<String>();
-			if (null != networkInterfaces) {
-				while (networkInterfaces.hasMoreElements()) {
-					NetworkInterface ni = networkInterfaces.nextElement();
-					Enumeration<InetAddress> inetAddresses = ni.getInetAddresses();
-					while (inetAddresses.hasMoreElements()) {
-						InetAddress in = inetAddresses.nextElement();
-						String hostAddress = in.getHostAddress();
-						if (hostAddress != null && !hostAddress.equals("127.0.0.1") &&
-								!hostAddress.startsWith("0:0:0:0:0:0:0:1") &&
-								!hostAddress.equals("::1")) {
-							newIpAddressList.add(hostAddress);
-						}
-					}
-				}
-			}
+			List<String> newIpAddressList = getIPAddr();
 			if (agentInfo.getIpAddressList().size() != newIpAddressList.size()) {
 				m_log.info("ipAddress change : " + agentInfo.getIpAddressList().size() +
 						"," + newIpAddressList.size());
@@ -995,6 +1115,30 @@ public class Agent {
 		}
 		
 		return agentInfo;
+	}
+	/**
+	 * IPアドレスの取得の外出し
+	 */
+	public static List<String> getIPAddr() throws SocketException{
+		List<String> newIpAddressList = new ArrayList<String>();
+		// IPアドレス取得
+		Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+		if (null != networkInterfaces) {
+			while (networkInterfaces.hasMoreElements()) {
+				NetworkInterface ni = networkInterfaces.nextElement();
+				Enumeration<InetAddress> inetAddresses = ni.getInetAddresses();
+				while (inetAddresses.hasMoreElements()) {
+					InetAddress in = inetAddresses.nextElement();
+					String hostAddress = in.getHostAddress();
+					if (hostAddress != null && !hostAddress.equals("127.0.0.1") &&
+							!hostAddress.startsWith("0:0:0:0:0:0:0:1") &&
+							!hostAddress.equals("::1")) {
+						newIpAddressList.add(hostAddress);
+					}
+				}
+			}
+		}
+		return newIpAddressList;
 	}
 
 	/**

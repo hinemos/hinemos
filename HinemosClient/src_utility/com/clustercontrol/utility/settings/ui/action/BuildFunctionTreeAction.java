@@ -841,18 +841,94 @@ public class BuildFunctionTreeAction {
 			funcReporting.setData(info);
 			funcTreeEnterprise.addChildren(funcReporting);
 			
-			// RPA
-			FuncTreeItem funcRpa = new FuncTreeItem();
-			info = new FuncInfo("",
-					HinemosModuleConstant.STRING_RPA,
-					"",
-					CommandConstant.WEIGHT_OTHER,
-					"",
-					false,
-					"");
-			funcRpa.setData(info);
-			funcTreeEnterprise.addChildren(funcRpa);
-
+			// RPA管理ここから
+			// RPA無効が指定されていないならRPA関連を有効とする
+			if (!options.contains(OptionUtil.TYPE_NORPA)) {
+				// RPA
+				FuncTreeItem funcRpa = new FuncTreeItem();
+				info = new FuncInfo("",
+						HinemosModuleConstant.STRING_RPA,
+						"",
+						CommandConstant.WEIGHT_OTHER,
+						"",
+						false,
+						"");
+				funcRpa.setData(info);
+				funcTreeEnterprise.addChildren(funcRpa);
+				
+				// RPAシナリオタグ
+				funcTreeChild = new FuncTreeItem();
+				info = new FuncInfo(HinemosModuleConstant.RPA_SCENARIO_TAG,
+						HinemosModuleConstant.STRING_RPA_SCENARIO_TAG,
+						XMLConstant.DEFAULT_XML_RPA_SCENARIO_TAG,
+						CommandConstant.WEIGHT_RPA_SCENARIO_TAG,
+						CommandConstant.ACTION_RPA_SCENARIO_TAG,
+						true,
+						"");
+				funcTreeChild.setData(info);
+				funcRpa.addChildren(funcTreeChild);
+				
+				// RPAシナリオ実績作成設定
+				funcTreeChild = new FuncTreeItem();
+				info = new FuncInfo(HinemosModuleConstant.RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
+						HinemosModuleConstant.STRING_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
+						XMLConstant.DEFAULT_XML_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
+						CommandConstant.WEIGHT_RPA_SCENARIO_OPE_RESULT_CREATE_SETTING,
+						CommandConstant.ACTION_RPA_SCENARIO_OPE_RESULT_CREATE_SETTING,
+						true,
+						com.clustercontrol.bean.HinemosModuleConstant.RPA_SCENARIO_CREATE);
+				funcTreeChild.setData(info);
+				funcRpa.addChildren(funcTreeChild);
+				
+				// RPA管理ツールアカウント
+				funcTreeChild = new FuncTreeItem();
+				info = new FuncInfo(HinemosModuleConstant.RPA_MANAGEMENT_TOOL_ACCOUNT,
+						HinemosModuleConstant.STRING_RPA_MANAGEMENT_TOOL_ACCOUNT,
+						XMLConstant.DEFAULT_XML_RPA_MANAGEMENT_TOOL_ACCOUNT,
+						CommandConstant.WEIGHT_RPA_MANAGEMENT_TOOL_ACCOUNT,
+						CommandConstant.ACTION_RPA_MANAGEMENT_TOOL_ACCOUNT,
+						true,
+						"");
+				funcTreeChild.setData(info);
+				funcRpa.addChildren(funcTreeChild);
+				
+				// RPA自動化効果計算
+				funcTreeChild = new FuncTreeItem();
+				info = new FuncInfo(HinemosModuleConstant.RPA_SCENARIO_COEFFICIENT_PATTERN,
+						HinemosModuleConstant.STRING_RPA_SCENARIO_COEFFICIENT_PATTERN,
+						XMLConstant.DEFAULT_XML_RPA_SCENARIO_COEFFICIENT_PATTERN,
+						CommandConstant.WEIGHT_RPA_SCENARIO_COEFFICIENT_PATTERN,
+						CommandConstant.ACTION_RPA_SCENARIO_COEFFICIENT_PATTERN,
+						true,
+						"");
+				funcTreeChild.setData(info);
+				funcRpa.addChildren(funcTreeChild);
+				
+				// RPAログファイル監視
+				funcTreeChild = new FuncTreeItem();
+				info = new FuncInfo(com.clustercontrol.bean.HinemosModuleConstant.MONITOR_RPA_LOGFILE,
+						HinemosModuleConstant.STRING_MONITOR_RPA_LOGFILE,
+						XMLConstant.DEFAULT_XML_MONITOR_RPA_LOGFILE,
+						CommandConstant.WEIGHT_MONITOR_RPA_LOGFILE,
+						CommandConstant.ACTION_MONITOR_RPA_LOGFILE,
+						true,
+						com.clustercontrol.bean.HinemosModuleConstant.MONITOR);
+				funcTreeChild.setData(info);
+				funcRpa.addChildren(funcTreeChild);
+				
+				// RPA管理ツール監視
+				funcTreeChild = new FuncTreeItem();
+				info = new FuncInfo(com.clustercontrol.bean.HinemosModuleConstant.MONITOR_RPA_MGMT_TOOL_SERVICE,
+						HinemosModuleConstant.STRING_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+						XMLConstant.DEFAULT_XML_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+						CommandConstant.WEIGHT_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+						CommandConstant.ACTION_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+						true,
+						com.clustercontrol.bean.HinemosModuleConstant.MONITOR);
+				funcTreeChild.setData(info);
+				funcRpa.addChildren(funcTreeChild);
+			}
+			// RPA管理ここまで
 
 			// ノードマップここから
 			// ノードマップ
@@ -925,80 +1001,6 @@ public class BuildFunctionTreeAction {
 			
 			// ジョブマップここまで
 			
-			// RPA管理ここから
-			// RPAシナリオタグ
-			funcTreeChild = new FuncTreeItem();
-			info = new FuncInfo(HinemosModuleConstant.RPA_SCENARIO_TAG,
-					HinemosModuleConstant.STRING_RPA_SCENARIO_TAG,
-					XMLConstant.DEFAULT_XML_RPA_SCENARIO_TAG,
-					CommandConstant.WEIGHT_RPA_SCENARIO_TAG,
-					CommandConstant.ACTION_RPA_SCENARIO_TAG,
-					true,
-					"");
-			funcTreeChild.setData(info);
-			funcRpa.addChildren(funcTreeChild);
-			
-			// RPAシナリオ実績作成設定
-			funcTreeChild = new FuncTreeItem();
-			info = new FuncInfo(HinemosModuleConstant.RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
-					HinemosModuleConstant.STRING_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
-					XMLConstant.DEFAULT_XML_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
-					CommandConstant.WEIGHT_RPA_SCENARIO_OPE_RESULT_CREATE_SETTING,
-					CommandConstant.ACTION_RPA_SCENARIO_OPE_RESULT_CREATE_SETTING,
-					true,
-					com.clustercontrol.bean.HinemosModuleConstant.RPA_SCENARIO_CREATE);
-			funcTreeChild.setData(info);
-			funcRpa.addChildren(funcTreeChild);
-			
-			// RPA管理ツールアカウント
-			funcTreeChild = new FuncTreeItem();
-			info = new FuncInfo(HinemosModuleConstant.RPA_MANAGEMENT_TOOL_ACCOUNT,
-					HinemosModuleConstant.STRING_RPA_MANAGEMENT_TOOL_ACCOUNT,
-					XMLConstant.DEFAULT_XML_RPA_MANAGEMENT_TOOL_ACCOUNT,
-					CommandConstant.WEIGHT_RPA_MANAGEMENT_TOOL_ACCOUNT,
-					CommandConstant.ACTION_RPA_MANAGEMENT_TOOL_ACCOUNT,
-					true,
-					"");
-			funcTreeChild.setData(info);
-			funcRpa.addChildren(funcTreeChild);
-			
-			// RPA自動化効果計算
-			funcTreeChild = new FuncTreeItem();
-			info = new FuncInfo(HinemosModuleConstant.RPA_SCENARIO_COEFFICIENT_PATTERN,
-					HinemosModuleConstant.STRING_RPA_SCENARIO_COEFFICIENT_PATTERN,
-					XMLConstant.DEFAULT_XML_RPA_SCENARIO_COEFFICIENT_PATTERN,
-					CommandConstant.WEIGHT_RPA_SCENARIO_COEFFICIENT_PATTERN,
-					CommandConstant.ACTION_RPA_SCENARIO_COEFFICIENT_PATTERN,
-					true,
-					"");
-			funcTreeChild.setData(info);
-			funcRpa.addChildren(funcTreeChild);
-			
-			// RPAログファイル監視
-			funcTreeChild = new FuncTreeItem();
-			info = new FuncInfo(com.clustercontrol.bean.HinemosModuleConstant.MONITOR_RPA_LOGFILE,
-					HinemosModuleConstant.STRING_MONITOR_RPA_LOGFILE,
-					XMLConstant.DEFAULT_XML_MONITOR_RPA_LOGFILE,
-					CommandConstant.WEIGHT_MONITOR_RPA_LOGFILE,
-					CommandConstant.ACTION_MONITOR_RPA_LOGFILE,
-					true,
-					com.clustercontrol.bean.HinemosModuleConstant.MONITOR);
-			funcTreeChild.setData(info);
-			funcRpa.addChildren(funcTreeChild);
-			
-			// RPA管理ツール監視
-			funcTreeChild = new FuncTreeItem();
-			info = new FuncInfo(com.clustercontrol.bean.HinemosModuleConstant.MONITOR_RPA_MGMT_TOOL_SERVICE,
-					HinemosModuleConstant.STRING_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
-					XMLConstant.DEFAULT_XML_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
-					CommandConstant.WEIGHT_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
-					CommandConstant.ACTION_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
-					true,
-					com.clustercontrol.bean.HinemosModuleConstant.MONITOR);
-			funcTreeChild.setData(info);
-			funcRpa.addChildren(funcTreeChild);
-			
-			// RPA管理ここまで
 		}
 
 		if(options.contains(OptionUtil.TYPE_XCLOUD)){

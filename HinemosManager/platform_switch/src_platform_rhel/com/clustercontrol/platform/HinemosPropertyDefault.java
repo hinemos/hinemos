@@ -38,7 +38,6 @@ public enum HinemosPropertyDefault implements HinemosPropertyAbstract {
 	reporting_create_process_multiplicity_limit(HinemosPropertyBean.numeric(0L)),
 	reporting_create_timeout(HinemosPropertyBean.numeric(1800L)),
 	reporting_filename(HinemosPropertyBean.string("hinemos_report")),
-	reporting_heap_size(HinemosPropertyBean.string("-Xms256m -Xmx256m -Xss256k")),
 	reporting_output_path(HinemosPropertyBean.string(System.getProperty("hinemos.manager.home.dir", "/opt/hinemos") + "/var/report")),
 	selfcheck_monitoring_filesystem_usage_list(HinemosPropertyBean.string("/:50")),
 	ws_https_keystore_path(HinemosPropertyBean.string("/root/keystore")),

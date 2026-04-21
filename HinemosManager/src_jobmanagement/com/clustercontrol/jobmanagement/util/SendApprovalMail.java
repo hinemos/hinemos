@@ -9,6 +9,8 @@
 package com.clustercontrol.jobmanagement.util;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -61,6 +63,8 @@ public class SendApprovalMail {
 
 	/** ログ出力のインスタンス */
 	private static Log m_log = LogFactory.getLog(SendApprovalMail.class);
+
+	private static final String DEFAULT_CHARSET = "UTF-8";
 
 	/**
 	 * 承認依頼メールの送信を行います。
@@ -303,18 +307,11 @@ public class SendApprovalMail {
 							+ ", " + e.getMessage());
 					String[] args = { jobInfo.getId().getSessionId(), jobInfo.getId().getJobId() };
 					AplLogger.put(InternalIdCommon.JOB_SYS_020, args);
-				} catch (MessagingException e) {
+				} catch (MessagingException | UnsupportedEncodingException | OAuthException e) {
 					String detailMsg = e.getCause() != null ? e.getMessage() + " Cause : " + e.getCause().getMessage()
 							: e.getMessage();
 					m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + " : " + e.getClass().getSimpleName()
 							+ ", " + e.getMessage());
-					String[] args = { jobInfo.getId().getSessionId(), jobInfo.getId().getJobId() };
-					AplLogger.put(InternalIdCommon.JOB_SYS_020, args);
-				} catch (UnsupportedEncodingException e) {
-					String detailMsg = e.getCause() != null ? e.getMessage() + " Cause : " + e.getCause().getMessage()
-							: e.getMessage();
-					m_log.warn("sendMail() " + e.getMessage() + " : " + detailMsg + detailMsg + " : "
-							+ e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 					String[] args = { jobInfo.getId().getSessionId(), jobInfo.getId().getJobId() };
 					AplLogger.put(InternalIdCommon.JOB_SYS_020, args);
 				}
@@ -328,7 +325,7 @@ public class SendApprovalMail {
 
 			}
 
-		} catch (RuntimeException | JobInfoNotFound | InvalidRole | OAuthException e1) {
+		} catch (RuntimeException | JobInfoNotFound | InvalidRole e1) {
 			String detailMsg = e1.getCause() != null ? e1.getMessage() + " Cause : " + e1.getCause().getMessage()
 					: e1.getMessage();
 			m_log.warn("sendMail() " + e1.getMessage() + " : " + detailMsg + detailMsg + " : "
@@ -365,9 +362,11 @@ public class SendApprovalMail {
 			return;
 		}
 
+		String setKeySlot = "";
 		MailServerSettings mailServerSettings;
 		if (slot > 0 && slot < 11) {
 			mailServerSettings = MultiSmtpServerUtil.getMailServerSettings(slot);
+			setKeySlot = "." + slot;
 		} else {
 			mailServerSettings = new MailServerSettings();
 		}
@@ -392,6 +391,18 @@ public class SendApprovalMail {
 				+ ", Errors-To = " + _errorsToAddress + ", tries = " + _transportTries + ", tries-interval = "
 				+ _transportTriesInterval + ", Charset [address:subject:content] = [" + _charsetAddress + ":"
 				+ _charsetSubject + ":" + _charsetContent + "]");
+
+		// 文字コードチェック結果
+		List<String> badKey = new ArrayList<>();
+		// NGの場合、デフォルトのUTF-8を再設定する。
+		_charsetAddress = checkCharset("mail" + setKeySlot + ".charset.address", _charsetAddress, badKey);
+		_charsetSubject = checkCharset("mail" + setKeySlot + ".charset.subject", _charsetSubject, badKey);
+		_charsetContent = checkCharset("mail" + setKeySlot + ".charset.content", _charsetContent, badKey);
+
+		// 文字コードに不備があった場合、AplLogger出力
+		if(badKey.size() != 0) {
+			AplLogger.put(InternalIdCommon.PLT_NTF_SYS_036, new String[] {String.join(",", badKey)});
+		}
 
 		// JavaMail Sessionリソース検索
 		Session session = Session.getInstance(_properties);
@@ -541,4 +552,24 @@ public class SendApprovalMail {
 		return address;
 	}
 
+	/**
+	 * メールに関するHinemosプロパティに設定された文字コードを判定します
+	 * 
+	 * @param key Hinemosプロパティのキー
+	 * @param charset 判定対象の文字コード
+	 * @param badKey イベントに出力する不正なキー情報
+	 * @return 使用する文字コード
+	 */
+	private String checkCharset(String key, String charset, List<String> badKey) {
+		try {
+			if (Charset.isSupported(charset)) {
+				return charset;
+			}
+		} catch (IllegalCharsetNameException e) {
+			m_log.warn("checkCharset() : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+		}
+		// サポートされていない、もしくは不正な文字列を含む場合はデフォルトの文字コードを設定する
+		badKey.add(key);
+		return DEFAULT_CHARSET;
+	}
 }

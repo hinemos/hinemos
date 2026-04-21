@@ -45,6 +45,12 @@ public class SystemParameterConstant {
 	public static final String PRIORITY = "PRIORITY";
 	/** ジョブセッションID */
 	public static final String SESSION_ID = "SESSION_ID";
+	/** ジョブユニットID */
+	public static final String JOBUNIT_ID = "JOBUNIT_ID";
+	/** ジョブID */
+	public static final String JOB_ID = "JOB_ID";
+	/** ジョブ名 */
+	public static final String JOB_NAME = "JOB_NAME";
 	/** ジョブセッション開始日時 */
 	public static final String START_DATE = "START_DATE";
 	/** ジョブ起動種類*/
@@ -183,6 +189,9 @@ public class SystemParameterConstant {
 		MESSAGE,
 		MONITOR_ID,
 		MONITOR_DETAIL_ID,
+		JOBUNIT_ID,
+		JOB_ID,
+		JOB_NAME,
 		ORG_MESSAGE,
 		PLUGIN_ID,
 		PRIORITY,
@@ -196,6 +205,9 @@ public class SystemParameterConstant {
 		MESSAGE,
 		MONITOR_ID,
 		MONITOR_DETAIL_ID,
+		JOBUNIT_ID,
+		JOB_ID,
+		JOB_NAME,
 		ORG_MESSAGE,
 		PLUGIN_ID,
 		PRIORITY
@@ -210,6 +222,9 @@ public class SystemParameterConstant {
 	// ジョブセッション情報から取得
 	public static final String SYSTEM_ID_LIST_JOB_SESSION[] = {
 		SESSION_ID,
+		JOBUNIT_ID,
+		JOB_ID,
+		JOB_NAME,
 		START_DATE,
 		TRIGGER_INFO,
 		TRIGGER_TYPE

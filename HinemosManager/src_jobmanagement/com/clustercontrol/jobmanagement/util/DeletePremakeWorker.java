@@ -111,6 +111,7 @@ public class DeletePremakeWorker {
 
 			// 処理件数
 			int count = 0;
+			boolean isFailure = false;
 
 			JpaTransactionManager jtm = null;
 			try {
@@ -132,34 +133,36 @@ public class DeletePremakeWorker {
 				}
 
 				// 通知処理(処理終了)
-				String[] args = {m_jobkickId, Integer.toString(count)};
-				String orgMessage = MessageConstant.MESSAGE_JOBKICK_ORGMSG_DELETE_PREMAKE.getMessage(args);
-				AplLogger.put(InternalIdCommon.JOB_SYS_022, new String[]{m_jobkickId}, orgMessage);
+				// 削除された件数が0件の場合、事前生成ジョブセッション削除を正常終了した旨のINTERNALイベントは通知しない
+				if (count > 0) {
+					String[] args = {m_jobkickId, Integer.toString(count)};
+					String orgMessage = MessageConstant.MESSAGE_JOBKICK_ORGMSG_DELETE_PREMAKE.getMessage(args);
+					AplLogger.put(InternalIdCommon.JOB_SYS_022, new String[]{m_jobkickId}, orgMessage);
+				}
 
 				// 終了処理
 				jtm.commit();
 
 			} catch (HinemosDbTimeout e) {
-				// 通知処理(エラー)
-				String[] args = {m_jobkickId, Integer.toString(count)};
-				String orgMessage = MessageConstant.MESSAGE_JOBKICK_ORGMSG_DELETE_PREMAKE.getMessage(args);
-				AplLogger.put(InternalIdCommon.JOB_SYS_023, new String[]{m_jobkickId}, orgMessage);
+				isFailure = true;
 				if (jtm != null) {
 					jtm.rollback();
 				}
 			} catch (Exception e) {
 				// 処理失敗
+				isFailure = true;
 				m_log.warn("run() error : jobkickId=" + this.m_jobkickId, e);
-				// 通知処理(エラー)
-				String[] args = {m_jobkickId, Integer.toString(count)};
-				String orgMessage = MessageConstant.MESSAGE_JOBKICK_ORGMSG_DELETE_PREMAKE.getMessage(args);
-				AplLogger.put(InternalIdCommon.JOB_SYS_023, new String[]{m_jobkickId}, orgMessage);
-					if (jtm != null) {
+				if (jtm != null) {
 					jtm.rollback();
 				}
 			} finally {
 				if (jtm != null) {
 					jtm.close();
+				}
+				if (isFailure) {
+					String[] args = { m_jobkickId, Integer.toString(count) };
+					String orgMessage = MessageConstant.MESSAGE_JOBKICK_ORGMSG_DELETE_PREMAKE.getMessage(args);
+					AplLogger.put(InternalIdCommon.JOB_SYS_023, new String[] { m_jobkickId }, orgMessage);
 				}
 			}
 		}

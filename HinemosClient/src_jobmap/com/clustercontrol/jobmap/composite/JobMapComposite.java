@@ -251,6 +251,13 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 				m_log.debug("event.data:" + event.data.toString());
 				// 追加する先のジョブユニット・ジョブネット
 				JobTreeItemWrapper jobTreeItem = m_controller.getCurrentJobTreeItem();
+				// 追加する先のジョブマップが表示されていない場合、処理が不要なため終了する
+				if (jobTreeItem == null) {
+					if (m_log.isDebugEnabled()) {
+						m_log.debug("drop : jobTreeItem is null.");
+					}
+					return;
+				}
 				if (!event.data.toString().split(",")[2].equals(JobTreeItemUtil.getManagerName(jobTreeItem)) 
 						|| (!event.data.toString().split(",")[0].equals(jobTreeItem.getData().getJobunitId()) && !m_controller.isDragdropId())) {
 					// 同マネージャでない場合は処理終了
@@ -902,10 +909,12 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 							dialog.setInputData(objectGroupInfo);
 							if (dialog.open() == IDialogConstants.OK_ID) {
 								JobObjectGroupInfoResponse inputGroup = dialog.getInputData();
-								JobWaitRuleInfoResponse jobWaitRuleInfo = secondItem.getData().getWaitRule();
-								jobWaitRuleInfo.addObjectGroupItem(inputGroup);
-								editedJobTree(secondItem);
-								m_composite.update();
+								if (inputGroup != null) {
+									JobWaitRuleInfoResponse jobWaitRuleInfo = secondItem.getData().getWaitRule();
+									jobWaitRuleInfo.addObjectGroupItem(inputGroup);
+									editedJobTree(secondItem);
+									m_composite.update();
+								}
 							}
 						}
 					}
@@ -1374,8 +1383,16 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 		//    この処理は上記むけの回避実装
 		if(m_layer.getChildren().size() <1){
 			setErrorMessage(Messages.getString( "jobmap.display.hint" ));
+			// ボタン設定を更新
+			setEnabledActionIfEditer();
 		}
 		
+	}
+	public void setEnabledActionIfEditer(){
+		// エディタならアクションボタン有効無効を更新
+		if( m_editorView != null ){
+			m_editorView.setEnabledAction(null);
+		}
 	}
 
 	/**
@@ -1386,4 +1403,12 @@ public class JobMapComposite extends Composite implements ISelectionProvider {
 		return this.m_updateSuccess;
 	}	
 	
+	/**
+	 * 現在のジョブマップに表示されているジョブを取得します。
+	 * 
+	 * @return ジョブマップに表示されているジョブ
+	 */
+	public JobTreeItemWrapper getJobTreeItemVisibleOnJobMap() {
+		return m_controller.getCurrentJobTreeItem();
+	}
 }

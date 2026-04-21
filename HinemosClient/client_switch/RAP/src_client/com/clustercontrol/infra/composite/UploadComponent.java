@@ -12,7 +12,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.addons.fileupload.FileDetails;
 import org.eclipse.rap.addons.fileupload.FileUploadEvent;
-import org.eclipse.rap.addons.fileupload.FileUploadHandler;
 import org.eclipse.rap.addons.fileupload.FileUploadListener;
 import org.eclipse.rap.rwt.service.ServerPushSession;
 import org.eclipse.rap.rwt.widgets.FileUpload;
@@ -26,6 +25,7 @@ import org.eclipse.swt.widgets.Text;
 
 import com.clustercontrol.bean.RequiredFieldColorConstant;
 import com.clustercontrol.infra.dialog.ChangeBackgroundModifyListener;
+import com.clustercontrol.util.FileUploadHandlerWrapper;
 
 /**
  * Upload composite
@@ -125,11 +125,12 @@ public class UploadComponent{
 	InfraFileUploadReceiver receiver = null;
 	ServerPushSession pushSession;
 	String url;
+	FileUploadHandlerWrapper uploadHandler;
 
 	private String startUploadReceiver() {
 		receiver = new InfraFileUploadReceiver();
 		pushSession = new ServerPushSession();
-		FileUploadHandler uploadHandler = new FileUploadHandler(receiver);
+		uploadHandler = new FileUploadHandlerWrapper(receiver);
 		uploadHandler.addUploadListener(new FileUploadListener() {
 			@Override
 			public void uploadProgress(FileUploadEvent event){
@@ -224,4 +225,9 @@ public class UploadComponent{
 		}
 	}
 
+	public void close() {
+		if (uploadHandler != null) {
+			uploadHandler.dispose();
+		}
+	}
 }

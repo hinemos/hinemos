@@ -129,6 +129,9 @@ public class StatusView extends ScopeListBaseView {
 		if (store.getBoolean(MonitorPreferencePage.P_STATUS_UPDATE_FLG)) {
 			this.startAutoReload();
 		}
+		
+		// 選択項目の汎用的な共有機構にビューアを登録
+		getSite().setSelectionProvider(tableComposite.getTableViewer());
 
 		// ボタン（アクション）を制御するリスナーを登録
 		this.tableComposite.getTableViewer().addSelectionChangedListener( new StatusListSelectionChangedListener() );

@@ -16,6 +16,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,8 +39,12 @@ public class BlockTransporter<T> {
 	private final int sizeThreshold;
 	private final long timeThreshold;
 	private final long maxTimeThreshold;
+	private final long addQueueWaitIntervalMSec;
+	private final long addQueueWaitWarnThresholdMSec;
 	private final AtomicInteger retryCount;
 	private final TransportProcessor<T> processor;
+
+	private final Lock addQueuelock = new ReentrantLock(true);
 
 	private long timeThresholdVariable;
 	
@@ -79,6 +85,8 @@ public class BlockTransporter<T> {
 		this.timeThresholdVariable = timeThreshold;
 		this.maxTimeThreshold = -1;
 		this.processor = resultsProcessor;
+		this.addQueueWaitIntervalMSec = getAddQueueWaitIntervalMSec();
+		this.addQueueWaitWarnThresholdMSec = getAddQueueWaitWarnThresholdMSec();
 
 		retryCount = new AtomicInteger(0);
 		queue = new LinkedBlockingQueue<>(queueSize);
@@ -113,6 +121,8 @@ public class BlockTransporter<T> {
 		this.timeThresholdVariable = timeThreshold;
 		this.maxTimeThreshold = maxTimeThreshold;
 		this.processor = resultsProcessor;
+		this.addQueueWaitIntervalMSec = getAddQueueWaitIntervalMSec();
+		this.addQueueWaitWarnThresholdMSec = getAddQueueWaitWarnThresholdMSec();
 
 		retryCount = new AtomicInteger(0);
 		queue = new LinkedBlockingQueue<>(queueSize);
@@ -136,6 +146,26 @@ public class BlockTransporter<T> {
 		requestId = null;
 	}
 
+	private long getAddQueueWaitIntervalMSec() {
+		return AgentProperties.getPropertyLongValue("forwarding.queue.wait.interval.msec", 100,
+				new AgentProperties.Validator<Long>() {
+					@Override
+					public boolean validate(Long value) {
+						return value >= 0;
+					}
+				});
+	}
+
+	private long getAddQueueWaitWarnThresholdMSec() {
+		return AgentProperties.getPropertyLongValue("forwarding.queue.wait.warn.threshold.msec", 10000,
+				new AgentProperties.Validator<Long>() {
+					@Override
+					public boolean validate(Long value) {
+						return value >= 0;
+					}
+				});
+	}
+	
 	public void shutdown(long timeoutMills) {
 		executor.shutdown();
 		try {
@@ -162,7 +192,13 @@ public class BlockTransporter<T> {
 		return queue.size();
 	}
 
-	public void add(T object) {
+	/**
+	 * マネージャへ送信する情報を格納するキューに追加する。キューが溢れた場合は、溢れた分を捨てる。
+	 * 
+	 * @param object
+	 *            送信情報
+	 */
+	public void addIfSpace(T object) {
 		synchronized (queue) {
 			try {
 				if (_queueSize != -1 && queue.size() >= _queueSize) {
@@ -181,6 +217,90 @@ public class BlockTransporter<T> {
 				log.error(makeLog("add: Failed."), e);
 			}
 		}
+	}
+
+	public boolean addWithWait(T object) {
+		return addWithWait(object, -1);
+	}
+
+	/**
+	 * マネージャへ送信する情報を格納するキューに追加する。キューが溢れた場合はキューが空くまで待つ。
+	 * 
+	 * @param object
+	 *            送信情報
+	 * @param timeoutInMillis
+	 *            キュー追加待ちのタイムアウト(-1で無限待ち)
+	 * @return キュー追加待ちでタイムアウトが発生した場合falseを返す
+	 */
+	public boolean addWithWait(T object, long timeoutInMillis) {
+		// v7.1.0/7.0.2のadd()関数ではExceptionをcatchしてエラーログを出力させException自体は握りつぶしていたが、そのcatchは削除した。
+		// 例外が発生する見込みは無く、発生した場合は予期せぬエラーとして呼び元に例外をそのままthrowし、呼び元で対処するように方針を変える。
+		try {
+			// キュー追加待ちのロック(addの呼び出しが並列で行われた場合の依頼順を順守するため)
+			addQueuelock.lock();
+
+			long start = System.currentTimeMillis();
+			long outputWarnLogTime = System.currentTimeMillis();
+			long totalWaitTime = 0;
+
+			while (true) {
+				synchronized (queue) {
+					if (queue.offer(object)) {
+						if (totalWaitTime > 0) {
+							// キュー追加の待ちが発生していた場合にDEBUGログ出力を行う
+							if (log.isDebugEnabled()) {
+								log.debug(makeLog("add SUCCESS: " + object + ", wait totaltime: " + totalWaitTime + "ms"));
+							}
+							// キュー追加の待ちが一定時間以上かかった場合はWARNログを出力する
+							if (totalWaitTime > addQueueWaitWarnThresholdMSec) {
+								log.warn(makeLog("add SUCCESS delayed exceed threshold: " + object + ", wait totaltime: " + totalWaitTime + "ms"));
+							}
+						}
+
+						if (sizeThreshold != -1 && queue.size() % sizeThreshold == 0) {
+							executor.submit(new ExecuteTransport());
+						}
+
+						return true;
+
+					} else {
+						// キューが飽和状態であれば待つ
+						// 初回のみデバッグログ出力
+						if (log.isDebugEnabled() && totalWaitTime == 0) {
+							log.debug(makeLog("add busy: " + object));
+						}
+					}
+				}
+
+				try {
+					if (timeoutInMillis >= 0 && totalWaitTime > timeoutInMillis) {
+						// タイムアウトの時間が指定されており、その時間以上経過した場合は処理を抜ける
+						log.warn(makeLog("add Timeout. " + object + ", totaltime: " + totalWaitTime + "ms"));
+						break;
+					}
+
+					long now = System.currentTimeMillis();
+					if (now - outputWarnLogTime > addQueueWaitWarnThresholdMSec) {
+						// 一定期間でログ出力
+						log.warn(makeLog("add wait for busy. " + object + ", wait time: " + totalWaitTime + "ms"));
+						outputWarnLogTime = now;
+					}
+
+					Thread.sleep(addQueueWaitIntervalMSec);
+					totalWaitTime = System.currentTimeMillis() - start;
+				} catch (InterruptedException e) {
+					// エラーで抜ける
+					log.warn(makeLog("Thread interrupted while waiting to add: " + object));
+					break;
+				}
+			}
+
+		} finally {
+			addQueuelock.unlock();
+		}
+
+		log.warn(makeLog("add: Rejected. " + object));
+		return false;
 	}
 
 	public void transport() {

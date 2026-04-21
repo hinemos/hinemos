@@ -17,7 +17,7 @@ import com.clustercontrol.util.MessageConstant;
 
 public class ModifyCloudScopeRequest implements RequestDto {
 	@RestItemName(MessageConstant.XCLOUD_CORE_CLOUDSCOPE_NAME)
-	@RestValidateString(maxLen = 256)
+	@RestValidateString(minLen = 1, maxLen = 256)
 	private String scopeName;
 	@RestItemName(MessageConstant.XCLOUD_CORE_DESCRIPTION)
 	@RestValidateString(notNull = true)

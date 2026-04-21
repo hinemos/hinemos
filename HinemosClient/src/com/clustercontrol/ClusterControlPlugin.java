@@ -120,10 +120,10 @@ public class ClusterControlPlugin extends AbstractUIPlugin {
 	public static final String IMG_RPAJOB = "rpajob";
 
 	/** チェック有りアイコンの取得キー */
-	public static final String IMG_CHECKED = "checked";
+	public static final String IMG_CHECKED = "booleantrue_light";
 
 	/** チェックなしアイコンの取得キー */
-	public static final String IMG_UNCHECKED = "unchecked";
+	public static final String IMG_UNCHECKED = "booleanfalse_light";
 
 	/** ラジオONアイコンの取得キー */
 	public static final String IMG_RADIO_ON = "radio_on";

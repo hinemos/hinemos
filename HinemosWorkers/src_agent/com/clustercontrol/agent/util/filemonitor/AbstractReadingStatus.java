@@ -38,6 +38,8 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 	private static final String CARRYOVER_KEY = "carryover";
 	private static final String PREV_SIZE_KEY = "prevSize";
 	private static final String UPDATE_COUNT_KEY = "updateCount";
+	private static final String CARRYOVER_UPDATE_DATE_KEY = "carryoverUpdateDate";
+	private static final String CARRYOVER_SEND_DATE_KEY = "carryoverSendDate";
 
 	// 読み込み状態ファイルのパス
 	protected final File rsFilePath;
@@ -73,6 +75,12 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 
 	// ファイル更新カウンタ
 	public long updateCount = 0;
+
+	// ファイルの更新日時
+	protected Long carryoverUpdateDate = null;
+
+	// キャリーオーバーを対象とした監視の実施時刻
+	protected Long carryoverSendDate = null;
 
 	private AbstractFileMonitorManager<T> fileMonitorManager;
 
@@ -138,6 +146,22 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 		this.updateCount = updateCount;
 	}
 
+	public Long getCarryoverUpdateDate() {
+		return carryoverUpdateDate;
+	}
+
+	public void setCarryoverUpdateDate(Long carryoverUpdateDate) {
+		this.carryoverUpdateDate = carryoverUpdateDate;
+	}
+
+	public Long getCarryoverSendDate() {
+		return carryoverSendDate;
+	}
+
+	public void setCarryoverSendDate(Long carryoverSendDate) {
+		this.carryoverSendDate = carryoverSendDate;
+	}
+
 	protected boolean initialize() {
 
 		// 初回起動時のみReadingStatusファイルの最新情報を取得する。
@@ -159,6 +183,34 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 				prevSize = Long.parseLong(props.getProperty(PREV_SIZE_KEY));
 				if(updateCount != 0){
 					updateCount = Long.parseLong(props.getProperty(UPDATE_COUNT_KEY));
+				}
+				String sendDateVal = props.getProperty(CARRYOVER_SEND_DATE_KEY);
+				if (sendDateVal != null) {
+					try {
+						carryoverSendDate = Long.parseLong(props.getProperty(CARRYOVER_SEND_DATE_KEY));
+					} catch (NumberFormatException e) {
+						log.warn(String.format(
+								"initialize() : failed to retrieve carryover send date. monitorId=%s, path=%s, error=%s",
+								monitorId, filePath.getAbsolutePath(), e.getMessage()));
+					}
+				}
+				String updateDateVal = props.getProperty(CARRYOVER_UPDATE_DATE_KEY);
+				if (updateDateVal != null) {
+					try {
+						carryoverUpdateDate = Long.parseLong(props.getProperty(CARRYOVER_UPDATE_DATE_KEY));
+					} catch (NumberFormatException e) {
+						carryoverUpdateDate = System.currentTimeMillis();
+						log.info(String.format(
+								"initialize() : normalize carryover update date due to the failure. monitorId=%s, path=%s, error=%s",
+								monitorId, filePath.getAbsolutePath(), e.getMessage()));
+						store();
+					}
+				} else if (carryover != null && !carryover.isEmpty()) {
+					carryoverUpdateDate = System.currentTimeMillis();
+					log.info(String.format(
+							"initialize() : normalize missing carryover update date. monitorId=%s, path=%s",
+							monitorId, filePath.getAbsolutePath()));
+					store();
 				}
 
 				// prefixBinStringを元にprefixBinary 初期化.
@@ -524,6 +576,12 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 			props.put(CARRYOVER_KEY, carryover);
 			props.put(PREV_SIZE_KEY, String.valueOf(prevSize));
 			props.put(UPDATE_COUNT_KEY, String.valueOf(++updateCount));
+			if (carryoverUpdateDate != null) {
+				props.put(CARRYOVER_UPDATE_DATE_KEY, String.valueOf(carryoverUpdateDate));
+			}
+			if (carryoverSendDate != null) {
+				props.put(CARRYOVER_SEND_DATE_KEY, String.valueOf(carryoverSendDate));
+			}
 			props.store(fi, filePath.getAbsolutePath());
 		} catch (IOException e) {
 			log.warn(e.getMessage(), e);
@@ -563,6 +621,7 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 		prevSize = 0;
 		carryover = "";
 		updateCount = 0;
+		carryoverUpdateDate = null;
 		store();
 	}
 
@@ -615,6 +674,7 @@ public abstract class AbstractReadingStatus<T extends AbstractFileMonitorInfoWra
 		position = 0;
 		prevSize = 0;
 		updateCount = 0;
+		carryoverUpdateDate = null;
 		store();
 	}
 

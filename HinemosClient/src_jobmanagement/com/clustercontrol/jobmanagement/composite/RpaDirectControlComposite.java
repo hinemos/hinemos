@@ -236,7 +236,7 @@ public class RpaDirectControlComposite extends Composite {
 		});
 
 		// ログインされていない場合 通知重要度コンボボックス
-		this.m_notLoginNotifyPriorityComboViewer = new ComboViewer(notLoginGroup, SWT.CHECK);
+		this.m_notLoginNotifyPriorityComboViewer = new ComboViewer(notLoginGroup, SWT.CHECK | SWT.READ_ONLY);
 		this.m_notLoginNotifyPriorityComboViewer.getCombo()
 				.setLayoutData(new GridData(notifyLayoutWidth, SizeConstant.SIZE_BUTTON_HEIGHT));
 		// プルダウン項目を設定
@@ -303,7 +303,7 @@ public class RpaDirectControlComposite extends Composite {
 		});
 
 		// 起動前にRPAツールがすでに動作している場合 通知重要度コンボボックス
-		this.m_rpaRunningNotifyPriorityComboViewer = new ComboViewer(rpaRunningGroup, SWT.CHECK);
+		this.m_rpaRunningNotifyPriorityComboViewer = new ComboViewer(rpaRunningGroup, SWT.CHECK | SWT.READ_ONLY);
 		this.m_rpaRunningNotifyPriorityComboViewer.getCombo()
 				.setLayoutData(new GridData(notifyLayoutWidth, SizeConstant.SIZE_BUTTON_HEIGHT));
 		// プルダウン項目を設定
@@ -371,7 +371,7 @@ public class RpaDirectControlComposite extends Composite {
 		});
 
 		// RPAツールが異常終了した場合 通知重要度コンボボックス
-		this.m_rpaAbnormalExitNotifyPriorityComboViewer = new ComboViewer(rpaAbnormalExitGroup, SWT.CHECK);
+		this.m_rpaAbnormalExitNotifyPriorityComboViewer = new ComboViewer(rpaAbnormalExitGroup, SWT.CHECK | SWT.READ_ONLY);
 		this.m_rpaAbnormalExitNotifyPriorityComboViewer.getCombo()
 				.setLayoutData(new GridData(notifyLayoutWidth, SizeConstant.SIZE_BUTTON_HEIGHT));
 		// プルダウン項目を設定
@@ -468,7 +468,7 @@ public class RpaDirectControlComposite extends Composite {
 		screenshotEndValueConditionLabel.setLayoutData(gd_screenshotEndValueConditionLabel);
 
 		// スクリーンショットを取得する判定条件（コンボボックス）
-		m_screenshotEndValueConditionComboViewer = new ComboViewer(screenshotEndValueComposite, SWT.BORDER);
+		m_screenshotEndValueConditionComboViewer = new ComboViewer(screenshotEndValueComposite, SWT.BORDER | SWT.READ_ONLY);
 		m_screenshotEndValueConditionComboViewer.getCombo()
 				.setLayoutData(new GridData(50, SizeConstant.SIZE_TEXT_HEIGHT));
 		// プルダウン項目を設定

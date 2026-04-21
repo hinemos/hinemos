@@ -167,7 +167,7 @@ public class RecordDataWriter implements Runnable {
 				createPerfFileRequest.setFacilityNameMap(facilityIdNameMap);
 				createPerfFileRequest.setFacilityList(entry.getValue());
 				createPerfFileRequest.setSummaryType(SummaryTypeEnum.fromValue(SummaryTypeConstant.typeToString(m_summaryType)));
-				createPerfFileRequest.setLocaleStr(Locale.getDefault().toString());
+				createPerfFileRequest.setLocaleStr(Locale.getDefault().getLanguage());
 				createPerfFileRequest.setHeader(headerFlag);
 				createPerfFileRequest.setDefaultDateStr(defaultDateStr);
 	

@@ -50,7 +50,6 @@ import org.glassfish.grizzly.http.server.Request;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeFunction;
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.SystemPrivilegeMode;
 import com.clustercontrol.bean.ActivationKeyConstant;
-import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.fault.HinemosUnknown;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
@@ -121,6 +120,7 @@ public class ReportingRestEndpoints {
 			@APIResponse(responseCode = STATUS_CODE_400, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_403, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
+			@APIResponse(responseCode = STATUS_CODE_404, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_409, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Produces(MediaType.APPLICATION_JSON)
@@ -128,7 +128,7 @@ public class ReportingRestEndpoints {
 	@RestLog(action = LogAction.Add, target = LogTarget.Schedule, type = LogType.UPDATE)
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.Reporting, modeList = { SystemPrivilegeMode.ADD, SystemPrivilegeMode.READ})
 	public Response addReportingSchedule(@Context Request request, @Context UriInfo uriInfo,
-			@RequestBody(description = "addReportingScheduleBody", content = @Content(schema = @Schema(implementation = AddReportingScheduleRequest.class))) String requestBody) throws HinemosUnknown, ReportingDuplicate, InvalidUserPass, InvalidRole,InvalidSetting
+			@RequestBody(description = "addReportingScheduleBody", content = @Content(schema = @Schema(implementation = AddReportingScheduleRequest.class))) String requestBody) throws HinemosUnknown, ReportingDuplicate, ReportingNotFound, InvalidUserPass, InvalidRole,InvalidSetting
 	{
 		m_log.debug("addReportingSchedule");
 		
@@ -527,9 +527,6 @@ public class ReportingRestEndpoints {
 			@Context Request request, @Context UriInfo uriInfo) throws HinemosUnknown, ReportingNotFound, InvalidUserPass, InvalidRole {
 		m_log.debug("getTemplateSetList");
 		
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
-		
 		List<TemplateSetInfo> infoResList = new ReportingControllerBean().getTemplateSetListByOwnerRole(ownerRoleId);
 		
 		List<TemplateSetInfoResponse> dtoResList = new ArrayList<>();
@@ -631,9 +628,6 @@ public class ReportingRestEndpoints {
 			@Context Request request, @Context UriInfo uriInfo) throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.debug("getTemplateIdList");
 		
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
-		
 		List<String> dtoResList = new ReportingControllerBean().getTemplateIdList(ownerRoleId);
 		
 		TemplateIdListResponse dtoRes = new TemplateIdListResponse();
@@ -682,6 +676,7 @@ public class ReportingRestEndpoints {
 	@Operation(operationId = ENDPOINT_OPERATION_ID_PREFIX + "DownloadReportingFile")
 	@RestLog(action = LogAction.Download, target = LogTarget.Schedule, type = LogType.UPDATE )
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.Reporting, modeList = { SystemPrivilegeMode.EXEC })
+	@IgnoreCommandline
 	@APIResponses(value = {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = SchemaType.STRING, format = "binary")), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
@@ -694,6 +689,7 @@ public class ReportingRestEndpoints {
 	{
 		String fileNameDecoded = RestCodecUtil.stringDecode(fileName);
 
+		ExecReportingProcess.checkBasePath();
 		File file = new File(ExecReportingProcess.getBasePath() + File.separator + fileNameDecoded);
 		
 		if(!file.exists()) {

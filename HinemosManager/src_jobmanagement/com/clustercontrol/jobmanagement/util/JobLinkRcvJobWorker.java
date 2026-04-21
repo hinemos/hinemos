@@ -387,6 +387,19 @@ public class JobLinkRcvJobWorker {
 
 	/**
 	 * ジョブ連携待機ジョブ情報をスケジューラから削除
+	 * ジョブ連携待機ジョブのジョブセッションは削除されたがスケジューラが残留した場合に
+	 * スケジュールされたジョブ連携待機ジョブ実行時に呼ばれることを想定したメソッド
+	 * 
+	 * @param runInstructionInfo
+	 *            指示情報
+	 * @throws HinemosUnknown
+	 */
+	public static void deleteScheduleByScheduler(RunInstructionInfo runInstructionInfo) throws HinemosUnknown {
+		deleteSchedule(runInstructionInfo, true);
+	}
+
+	/**
+	 * ジョブ連携待機ジョブ情報をスケジューラから削除
 	 * 
 	 * @param runInstructionInfo
 	 *            指示情報
@@ -460,8 +473,6 @@ public class JobLinkRcvJobWorker {
 			try {
 				/** スケジュール削除 */
 				deleteSchedule(runInstructionInfo, false);
-				/** RunHistory削除 */
-				RunHistoryUtil.delRunHistory(runInstructionInfo);
 				/** スケジューラ制御用ロック削除 */
 				JobLinkRcvJobWorker.deleteSchedulerLock(getKey(runInstructionInfo));
 			} catch (HinemosUnknown e) {
@@ -594,14 +605,30 @@ public class JobLinkRcvJobWorker {
 
 						// 実行履歴が存在しない場合にはエラーを返す
 						if (RunHistoryUtil.findRunHistory(m_runInstructionInfo) == null) {
-							// メッセージ送信
-							endJobLinkRcvJob(m_runInstructionInfo, "Internal Error : Ex. Job already terminated.",
-									RunStatusConstant.ERROR, JobLinkConstant.RCV_INITIAL_END_VALUE_TIMEOUT, null, false);
+							ILock lock = JobRunManagementBean.getLock(m_runInstructionInfo.getSessionId());
+							if (lock != null) {
+								lock.writeLock();
+								try {
+									// メッセージ送信
+									endJobLinkRcvJob(m_runInstructionInfo, "Internal Error : Ex. Job already terminated.",
+											RunStatusConstant.ERROR, JobLinkConstant.RCV_INITIAL_END_VALUE_TIMEOUT, null, false);
+								} finally {
+									lock.writeUnlock();
+								}
+							}
 						} else {
 							// 終了処理
-							// キャンセル処理
-							endJobLinkRcvJob(m_runInstructionInfo, "", RunStatusConstant.END,
-									JobLinkConstant.RCV_INITIAL_END_VALUE_INFO, null, false);
+							ILock lock = JobRunManagementBean.getLock(m_runInstructionInfo.getSessionId());
+							if (lock != null) {
+								lock.writeLock();
+								try {
+									// キャンセル処理
+									endJobLinkRcvJob(m_runInstructionInfo, "", RunStatusConstant.END,
+											JobLinkConstant.RCV_INITIAL_END_VALUE_INFO, null, false);
+								} finally {
+									lock.writeUnlock();
+								}
+							}
 						}
 					}
 				}
@@ -610,9 +637,17 @@ public class JobLinkRcvJobWorker {
 
 			} catch (Exception e) {
 				// 実行時に失敗
-				// メッセージ作成
-				endJobLinkRcvJob(m_runInstructionInfo, e.getMessage(), RunStatusConstant.ERROR,
-						JobLinkConstant.RCV_INITIAL_END_VALUE_TIMEOUT, null, false);
+				ILock lock = JobRunManagementBean.getLock(m_runInstructionInfo.getSessionId());
+				if (lock != null) {
+					lock.writeLock();
+					try {
+						// メッセージ作成
+						endJobLinkRcvJob(m_runInstructionInfo, e.getMessage(), RunStatusConstant.ERROR,
+								JobLinkConstant.RCV_INITIAL_END_VALUE_TIMEOUT, null, false);
+					} finally {
+						lock.writeUnlock();
+					}
+				}
 				if (jtm != null)
 					jtm.rollback();
 			} finally {

@@ -13,6 +13,7 @@ import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertDatetime;
 import com.clustercontrol.rest.annotation.cmdtool.DatetimeTypeParam;
 import com.clustercontrol.rest.dto.RequestDto;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class ModifyTemplateSetRequest implements RequestDto {
 	
@@ -23,11 +24,15 @@ public class ModifyTemplateSetRequest implements RequestDto {
 	private String description;
 	@RestBeanConvertDatetime
 	@DatetimeTypeParam
+	@JsonIgnore
 	private String regDate;
 	@RestBeanConvertDatetime
 	@DatetimeTypeParam
+	@JsonIgnore
 	private String updateDate;
+	@JsonIgnore
 	private String regUser;
+	@JsonIgnore
 	private String updateUser;
 	private List<TemplateSetDetailInfoRequest> templateSetDetailInfoList;
 

@@ -59,14 +59,14 @@ public class JobWaitRuleInfoRequest implements RequestDto {
 	private Integer endValue = EndStatusConstant.INITIAL_VALUE_ABNORMAL;
 
 	/** 排他分岐 */
-	private Boolean exclusiveBranch = false;
+	private Boolean exclusiveBranch = null;
 
 	/** 排他分岐の終了状態 */
 	@RestBeanConvertEnum
-	private EndStatusSelectEnum exclusiveBranchEndStatus = EndStatusSelectEnum.NORMAL;
+	private EndStatusSelectEnum exclusiveBranchEndStatus = null;
 
 	/** 排他分岐の終了値 */
-	private Integer exclusiveBranchEndValue = EndStatusConstant.INITIAL_VALUE_WARNING;
+	private Integer exclusiveBranchEndValue = null;
 
 	/** 後続ジョブ優先度 */
 	private List<JobNextJobOrderInfoRequest> exclusiveBranchNextJobOrderList = new ArrayList<>();

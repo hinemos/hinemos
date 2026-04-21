@@ -23,13 +23,24 @@ import org.eclipse.core.runtime.IExtension;
 import org.eclipse.core.runtime.IExtensionPoint;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
+import org.openapitools.client.model.CheckPublishResponse;
 
 import com.clustercontrol.ClusterControlPlugin;
+import com.clustercontrol.fault.HinemosUnknown;
+import com.clustercontrol.fault.InvalidRole;
+import com.clustercontrol.fault.InvalidUserPass;
+import com.clustercontrol.fault.RestConnectFailed;
+import com.clustercontrol.fault.UrlNotFound;
+import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.RestConnectManager;
 import com.clustercontrol.util.RestConnectUnit;
+import com.clustercontrol.utility.settings.SettingConstants;
+import com.clustercontrol.utility.util.UtilityManagerUtil;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.model.cloud.HinemosManager;
 import com.clustercontrol.xcloud.model.cloud.ICloudScopes;
 import com.clustercontrol.xcloud.model.cloud.IHinemosManager;
+import com.clustercontrol.xcloud.util.CloudRestClientWrapper;
 import com.clustercontrol.xcloud.util.CollectionComparator;
 
 public class CloudTools {
@@ -92,6 +103,56 @@ public class CloudTools {
 		return roots;
 	}
 
+	public static List<com.clustercontrol.xcloud.model.cloud.ICloudScope> getCurrentManagerCloudScopeList(){
+		return getTargeManagerCloudScopeList(UtilityManagerUtil.getCurrentManagerName());
+	}
+
+	public static List<com.clustercontrol.xcloud.model.cloud.ICloudScope> getTargeManagerCloudScopeList(String targetManagerName){
+		List<com.clustercontrol.xcloud.model.cloud.ICloudScope> roots = new ArrayList<>();
+		
+		List<ICloudScopes> cloudScopeRoots = new ArrayList<>();
+		
+		//該当のマネージャがなければ 空のリストを返却
+		IHinemosManager targetManager = null;
+		for (IHinemosManager manager: getHinemosManagers()) {
+			if(targetManagerName.equals( manager.getManagerName())){
+				targetManager = manager;
+				break;
+			}
+		}
+		if(targetManager == null){
+			return roots;
+		}
+		
+		//該当のマネージャについてクラウド・ＶＭ機能が有効でなければ 空のリストを返却
+		CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper( targetManager.getManagerName());
+		try{
+			CheckPublishResponse res = endpoint.checkPublish();
+			if( res.getPublish().booleanValue() ){
+				targetManager.update();
+				cloudScopeRoots.add(targetManager.getCloudScopes());
+			}
+		}catch( RestConnectFailed |HinemosUnknown| CloudManagerException| InvalidRole| InvalidUserPass e){
+			return roots;
+		}
+		
+		for (ICloudScopes cloudScopes: cloudScopeRoots) {
+			roots.addAll(Arrays.asList(cloudScopes.getCloudScopes()));
+		}
+		
+		Collections.sort(roots, new Comparator<com.clustercontrol.xcloud.model.cloud.ICloudScope>() {
+			@Override
+			public int compare(com.clustercontrol.xcloud.model.cloud.ICloudScope o1, com.clustercontrol.xcloud.model.cloud.ICloudScope o2) {
+				int compare = o1.getCloudScopes().getHinemosManager().getManagerName().compareTo(o2.getCloudScopes().getHinemosManager().getManagerName());
+				if (compare == 0) {
+					return o1.getId().compareTo(o2.getId());
+				}
+				return compare;
+			}
+		});
+		return roots;
+	}
+
 	/**
 	 * 指定されたIDのクラウドスコープを取得します。
 	 * 該当するクラウドスコープが見つからなければ例外を投げます。
@@ -134,4 +195,31 @@ public class CloudTools {
 		}
 		return validList;
 	}
+	
+	public static int checkCurrentManagerCloudPublish( Logger logger ) {
+		return checkTargetManagerCloudPublish(UtilityManagerUtil.getCurrentManagerName(),logger);
+	}
+
+	public static int checkTargetManagerCloudPublish(String targetManName , Logger logger) {
+		CheckPublishResponse res = null;
+		try{
+			CloudRestClientWrapper endpoint = CloudRestClientWrapper.getWrapper(targetManName);
+			res = endpoint.checkPublish();
+			if (res == null || res.getPublish() == false) {
+				// getPublishにて応答がtrueでないならマネージャ側でクラウド機能が有効化されていないと判断する。
+				logger.error(Messages.getString("message.xcloud.required"));
+				return SettingConstants.ERROR_INPROCESS;
+			}
+		}catch( Exception e){
+			if(UrlNotFound.class.equals(e.getCause().getClass())) {
+				// getPublishにてExceptionのCauseがUrlNotFoundはマネージャ側でクラウド機能が有効化されていないと判断する。
+				logger.error(Messages.getString("message.xcloud.required"));
+			}else{
+				logger.error(Messages.getString("SettingTools.ExportFailed"),e);
+			}
+			return SettingConstants.ERROR_INPROCESS;
+		}
+		return SettingConstants.SUCCESS;
+	}
+	
 }

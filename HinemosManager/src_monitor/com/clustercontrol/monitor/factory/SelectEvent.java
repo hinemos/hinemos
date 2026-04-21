@@ -395,11 +395,11 @@ public class SelectEvent {
 
 		boolean UTF8_BOM = HinemosPropertyCommon.monitor_common_report_event_bom.getBooleanValue();
 		if (UTF8_BOM) {
-			FileOutputStream fos = new FileOutputStream(file);
-			fos.write( 0xef );
-			fos.write( 0xbb );
-			fos.write( 0xbf );
-			fos.close();
+			try (FileOutputStream fos = new FileOutputStream(file)) {
+				fos.write( 0xef );
+				fos.write( 0xbb );
+				fos.write( 0xbf );
+			}
 		}
 		FileWriter filewriter = new FileWriter(file, true);
 

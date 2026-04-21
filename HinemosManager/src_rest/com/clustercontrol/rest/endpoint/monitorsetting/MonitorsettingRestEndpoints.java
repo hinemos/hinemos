@@ -53,7 +53,6 @@ import com.clustercontrol.bean.HinemosModuleConstant;
 import com.clustercontrol.bean.PriorityConstant;
 import com.clustercontrol.binary.model.BinaryCheckInfo;
 import com.clustercontrol.binary.session.BinaryControllerBean;
-import com.clustercontrol.commons.util.CommonValidator;
 import com.clustercontrol.custom.bean.CustomConstant.CommandExecType;
 import com.clustercontrol.fault.CollectorNotFound;
 import com.clustercontrol.fault.HinemosUnknown;
@@ -361,9 +360,6 @@ public class MonitorsettingRestEndpoints {
 			throws InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.info("call getStringMonitoInfoList()");
 
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
-		
 		List<MonitorInfo> infoResList = new MonitorSettingControllerBean().getStringMonitoInfoListForAnalytics(facilityId, ownerRoleId);
 		List<MonitorInfoResponseP1> dtoResList = new ArrayList<>();
 		for (MonitorInfo info : infoResList) {
@@ -4373,9 +4369,6 @@ public class MonitorsettingRestEndpoints {
 			throws MonitorNotFound, InvalidUserPass, InvalidRole, HinemosUnknown {
 		m_log.info("call getStringAndTrapMonitorInfoList()");
 
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
-		
 		List<MonitorInfoBeanResponse> dtoResList = new ArrayList<>();
 		if (facilityId != null && !facilityId.isEmpty()) {
 			
@@ -5209,17 +5202,15 @@ public class MonitorsettingRestEndpoints {
 	@RestSystemPrivilege(function = SystemPrivilegeFunction.MonitorSetting, modeList = { SystemPrivilegeMode.READ })
 	@APIResponses(value = {
 			@APIResponse(responseCode = STATUS_CODE_200, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = GetMonitorStringTagListResponse.class, type=SchemaType.ARRAY)), description = "response"),
+			@APIResponse(responseCode = STATUS_CODE_400, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_401, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_403, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response"),
 			@APIResponse(responseCode = STATUS_CODE_500, content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ExceptionBody.class)), description = "response") })
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getMonitorStringTagList(@Context Request request, @Context UriInfo uriInfo,
 			@PathParam("monitorId") String monitorId,
-			@QueryParam("ownerRoleId") String ownerRoleId) throws InvalidRole, HinemosUnknown, MonitorNotFound {
+			@QueryParam("ownerRoleId") String ownerRoleId) throws InvalidRole, HinemosUnknown, MonitorNotFound, InvalidSetting {
 		m_log.info("call getMonitorStringTagList()");
-		
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
 		
 		List<GetMonitorStringTagListResponse> dtoResList = new ArrayList<>();
 		

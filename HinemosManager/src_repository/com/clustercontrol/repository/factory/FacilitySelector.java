@@ -34,7 +34,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.clustercontrol.accesscontrol.bean.PrivilegeConstant.ObjectPrivilegeMode;
+import com.clustercontrol.accesscontrol.util.OptionManager;
 import com.clustercontrol.accesscontrol.util.UserRoleCache;
+import com.clustercontrol.bean.ActivationKeyConstant;
 import com.clustercontrol.commons.util.AbstractCacheManager;
 import com.clustercontrol.commons.util.CacheManagerFactory;
 import com.clustercontrol.commons.util.HinemosEntityManager;
@@ -1627,9 +1629,13 @@ public class FacilitySelector {
 		buildInScopeFacilityIdSet.add(FacilityTreeAttributeConstant.NODE_CONFIGURATION_SCOPE);
 		
 		// アクティベーションした場合、RPAスコープがビルトインになる
-		buildInScopeFacilityIdSet.add(RpaConstants.RPA);
-		buildInScopeFacilityIdSet.add(RpaConstants.RPA_NO_MGR_WINACTOR);
-		buildInScopeFacilityIdSet.add(RpaConstants.RPA_NO_MGR_UIPATH);
+		// RPA無効が指定されていないならRPA関連を有効とする
+		Set<String> options = OptionManager.getOptions();
+		if (!options.contains(ActivationKeyConstant.TYPE_NORPA)) {
+			buildInScopeFacilityIdSet.add(RpaConstants.RPA);
+			buildInScopeFacilityIdSet.add(RpaConstants.RPA_NO_MGR_WINACTOR);
+			buildInScopeFacilityIdSet.add(RpaConstants.RPA_NO_MGR_UIPATH);
+		}
 		
 		// クラウドのルートスコープは、初期は存在しないが、作成されるとビルトインになる。
 		buildInScopeFacilityIdSet.add(CloudConstants.privateRootId);
@@ -2031,11 +2037,11 @@ public class FacilitySelector {
 			throws IOException {
 		boolean UTF8_BOM = HinemosPropertyCommon.node_config_report_bom.getBooleanValue();
 		if (UTF8_BOM) {
-			FileOutputStream fos = new FileOutputStream(file);
-			fos.write( 0xef );
-			fos.write( 0xbb );
-			fos.write( 0xbf );
-			fos.close();
+			try (FileOutputStream fos = new FileOutputStream(file)) {
+				fos.write( 0xef );
+				fos.write( 0xbb );
+				fos.write( 0xbf );
+			}
 		}
 		FileWriter filewriter = new FileWriter(file, true);
 		

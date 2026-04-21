@@ -109,6 +109,11 @@ public class NotifyUtil {
 	// ★
 	private static final String _KEY_JOB_APPROVAL_TEXT = "JOB_APPROVAL_TEXT";
 	private static final String _KEY_JOB_APPROVAL_MAIL = "JOB_APPROVAL_MAIL";
+	
+
+	private static final String _KEY_JOB_ID = "JOB_ID";
+	private static final String _KEY_JOB_NAME = "JOB_NAME";
+	private static final String _KEY_JOBUNIT_ID = "JOBUNIT_ID";
 
 	private static final String _KEY_NOTIFY_UUID = "NOTIFY_UUID";
 
@@ -249,6 +254,10 @@ public class NotifyUtil {
 				param.put(_KEY_JOB_APPROVAL_MAIL, HinemosMessage.replace(outputInfo.getJobApprovalMail()));
 				log.info("_KEY_JOB_APPROVAL_MAIL" + outputInfo.getJobApprovalMail());
 			}
+			param.put(_KEY_JOB_ID, outputInfo.getJobId());
+			param.put(_KEY_JOB_NAME, outputInfo.getJobName());
+			param.put(_KEY_JOBUNIT_ID, outputInfo.getJobunitId());
+
 			param.put(_KEY_NOTIFY_UUID, outputInfo.getNotifyUUID());
 		}
 

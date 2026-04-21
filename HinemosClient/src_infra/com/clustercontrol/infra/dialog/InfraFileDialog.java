@@ -398,6 +398,7 @@ public class InfraFileDialog extends CommonDialog {
 	@Override
 	public boolean close() {
 		uploadComponent.cleanup();
+		uploadComponent.close();
 		return super.close();
 	}
 }

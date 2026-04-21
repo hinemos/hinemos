@@ -210,7 +210,7 @@ public class NodeSearchDialog extends CommonDialog {
 		WidgetTestUtil.setTestId(this, "ipaddress", ipAddressBoxFrom);
 		gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
-		gridData.minimumWidth = 120;
+		gridData.widthHint = 120;
 		gridData.horizontalSpan = SPAN_IPADDRESS_FROM;
 		gridData.grabExcessHorizontalSpace = true;
 		this.ipAddressBoxFrom.setLayoutData(gridData);
@@ -229,7 +229,7 @@ public class NodeSearchDialog extends CommonDialog {
 		WidgetTestUtil.setTestId(this, "ipaddress", ipAddressBoxTo);
 		gridData = new GridData();
 		gridData.horizontalAlignment = GridData.FILL;
-		gridData.minimumWidth = 120;
+		gridData.widthHint = 120;
 		gridData.horizontalSpan = SPAN_IPADDRESS_TO;
 		gridData.grabExcessHorizontalSpace = true;
 		this.ipAddressBoxTo.setLayoutData(gridData);
@@ -260,7 +260,7 @@ public class NodeSearchDialog extends CommonDialog {
 		this.portBox = new Text(groupSnmp, SWT.BORDER | SWT.SINGLE);
 		WidgetTestUtil.setTestId(this, "port", portBox);
 		gridData = new GridData();
-		gridData.minimumWidth = 50;
+		gridData.widthHint = 50;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		gridData.horizontalSpan = SPAN_PORT_BOX;
@@ -289,6 +289,7 @@ public class NodeSearchDialog extends CommonDialog {
 		this.communityBox = new Text(groupSnmp, SWT.BORDER | SWT.SINGLE);
 		WidgetTestUtil.setTestId(this, "community", communityBox);
 		gridData = new GridData();
+		gridData.widthHint = 50;
 		gridData.horizontalSpan = SPAN_COMMUNITY_BOX;
 		gridData.horizontalAlignment = GridData.FILL;
 		gridData.grabExcessHorizontalSpace = true;

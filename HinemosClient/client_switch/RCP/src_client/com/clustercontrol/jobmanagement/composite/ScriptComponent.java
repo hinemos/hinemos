@@ -270,4 +270,7 @@ public class ScriptComponent {
 		}
 	}
 
+	public void close() {
+		// Do nothing
+	}
 }

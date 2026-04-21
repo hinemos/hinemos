@@ -12,16 +12,23 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.Text;
 import org.openapitools.client.model.HinemosPropertyResponse;
 import org.openapitools.client.model.HinemosPropertyResponse.TypeEnum;
 
@@ -51,6 +58,9 @@ public class HinemosPropertyComposite extends Composite {
 
 	// ----- instance フィールド ----- //
 
+	/** プロパティID検索 */
+	private Text propertyKeyFilterText = null;
+
 	/** テーブルビューア */
 	private CommonTableViewer tableViewer = null;
 
@@ -76,21 +86,38 @@ public class HinemosPropertyComposite extends Composite {
 	 * コンポジットを生成・構築します。
 	 */
 	private void initialize() {
-		GridLayout layout = new GridLayout(1, true);
+		GridLayout layout = new GridLayout(3, false);
 		this.setLayout(layout);
 		layout.marginHeight = 0;
 		layout.marginWidth = 0;
+		
+		Label propertyKey = new Label(this, SWT.RIGHT);
+		propertyKey.setText(Messages.getString("キー", Locale.getDefault()) + " : ");
+		GridData gridData = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		propertyKey.setLayoutData(gridData);
+		
+		// Hinemosプロパティのキー検索窓
+		propertyKeyFilterText = new Text(this, SWT.BORDER);
+		gridData = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
+		gridData.widthHint = 300;
+		propertyKeyFilterText.setLayoutData(gridData);
+		
+		propertyKeyFilterText.addKeyListener(new KeyAdapter() {
+				@Override
+				public void keyPressed(KeyEvent e) {
+					if (e.keyCode == SWT.CR) {
+						HinemosPropertyComposite.this.update();
+						tableViewer.refresh();
+					}
+				}
+			});
 
 		Table table = new Table(this, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION);
 		WidgetTestUtil.setTestId(this, null, table);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 
-		GridData gridData = new GridData();
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.verticalAlignment = GridData.FILL;
-		gridData.grabExcessHorizontalSpace = true;
-		gridData.grabExcessVerticalSpace = true;
+		gridData = new GridData(GridData.FILL, GridData.FILL, true, true, 3, 1);
 		table.setLayoutData(gridData);
 
 		// テーブルビューアの作成
@@ -165,13 +192,13 @@ public class HinemosPropertyComposite extends Composite {
 		}
 
 		// tableViewer にセットするための詰め替え
-		ArrayList<Object> listInput = new ArrayList<Object>();
+		List<List<Object>> listInput = new ArrayList<>();
 		Calendar createCal = Calendar.getInstance(TimezoneUtil.getTimeZone());
 		Calendar modifyCal = Calendar.getInstance(TimezoneUtil.getTimeZone());
 
 		for (Map.Entry<String, List<HinemosPropertyResponse>> map : dispDataMap.entrySet()) {
 			for (HinemosPropertyResponse info : map.getValue()) {
-				ArrayList<Object> list = new ArrayList<Object>();
+				List<Object> list = new ArrayList<>();
 
 				list.add(map.getKey());
 				list.add(info.getKey());
@@ -215,7 +242,13 @@ public class HinemosPropertyComposite extends Composite {
 				listInput.add(list);
 			}
 		}
-
+		
+		// 指定された部分文字列でフィルター
+		String filterText = Optional.ofNullable(propertyKeyFilterText.getText()).orElse("");
+		if (!filterText.isEmpty()) {
+			listInput = listInput.stream().filter(l->l.get(1).toString().contains(filterText)).collect(Collectors.toList());
+		}
+		
 		// テーブル更新
 		this.tableViewer.setInput(listInput);
 	}

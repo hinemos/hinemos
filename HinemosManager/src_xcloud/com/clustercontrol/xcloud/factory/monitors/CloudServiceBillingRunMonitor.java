@@ -203,8 +203,9 @@ public class CloudServiceBillingRunMonitor extends RunMonitorNumericValueType {
 					IBillings.PlatformServiceBilling billing = cManager.getBillings().getPlatformServiceBilling(cloudScope, service);
 					billings.put(facilityId, billing);
 				}
-				ret.addAll(createBillingOutputBasicInfo(target, billings));
-				
+				if (m_monitor.getMonitorFlg()) {
+					ret.addAll(createBillingOutputBasicInfo(target, billings));
+				}
 				if (m_monitor.getCollectorFlg() || m_monitor.getPredictionFlg() || m_monitor.getChangeFlg()) {
 					for (Map.Entry<String, IBillings.PlatformServiceBilling> entry: billings.entrySet()) {
 

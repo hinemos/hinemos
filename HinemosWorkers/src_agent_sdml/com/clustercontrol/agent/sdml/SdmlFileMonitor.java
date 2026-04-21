@@ -68,7 +68,7 @@ public class SdmlFileMonitor extends AbstractFileMonitor<SdmlFileMonitorInfoWrap
 	}
 
 	@Override
-	protected void patternMatchAndSendManager(String line) {
+	protected boolean patternMatchAndSendManager(String line) {
 		Pattern sdmlVersionPattern = Pattern.compile(SDML_VERSION_FORMAT);
 		Matcher sdmlVersionMatcher = sdmlVersionPattern.matcher(line);
 		if (sdmlVersionMatcher.find()) {
@@ -83,7 +83,7 @@ public class SdmlFileMonitor extends AbstractFileMonitor<SdmlFileMonitorInfoWrap
 						MessageConstant.SDML_MSG_FILE_PATH.getMessage(getFilePath()) + "\n"
 								+ MessageConstant.SDML_MSG_VERSION.getMessage(version));
 			}
-			return;
+			return false;
 		}
 
 		// バージョン未チェックでバージョン情報以外の行が来たらフォーマットエラー
@@ -95,7 +95,7 @@ public class SdmlFileMonitor extends AbstractFileMonitor<SdmlFileMonitorInfoWrap
 						MessageConstant.SDML_MSG_LOG_READER_INVALID_LOG.getMessage(),
 						MessageConstant.SDML_MSG_LOG.getMessage(line));
 			}
-			return;
+			return false;
 		}
 
 		// 正常バージョンのみ処理（異常バージョン時はバージョンチェック時にメッセージ送信しているので通知もしない）
@@ -121,11 +121,12 @@ public class SdmlFileMonitor extends AbstractFileMonitor<SdmlFileMonitorInfoWrap
 						// パターンに誤りがなければnullは通常ありえないが念のため除外
 						log.warn("patternMatchAndSendManager(): Application ID in the log is different. Control Setting="
 								+ m_wrapper.getId() + ", Log=" + line);
-						return;
+						return false;
 					}
 
 					SdmlControlLogForwarder.getInstance().add(time, hostname, applicationId, pid, controlCode, message,
 							line);
+					return true;
 				} catch (ParseException e) {
 					// 正規表現でフォーマットチェックしているので通常ここには到達しない
 					sendMessage(PriorityConstant.TYPE_WARNING, m_wrapper.getApplication(),
@@ -139,6 +140,7 @@ public class SdmlFileMonitor extends AbstractFileMonitor<SdmlFileMonitorInfoWrap
 						MessageConstant.SDML_MSG_LOG.getMessage(line));
 			}
 		}
+		return false;
 	}
 
 	@Override

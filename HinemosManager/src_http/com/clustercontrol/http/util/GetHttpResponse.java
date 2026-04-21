@@ -16,7 +16,6 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
@@ -413,8 +412,6 @@ public class GetHttpResponse implements Closeable {
 
 			result.url = url;
 			if (m_authType != null && !AuthType.NONE.equals(m_authType)) {
-				URL uri = new URL(url);
-
 				Credentials credential = null;
 				String authSchema = null;
 				switch (m_authType) {
@@ -435,10 +432,7 @@ public class GetHttpResponse implements Closeable {
 				}
 
 				if (credential != null) {
-					AuthScope scope = new AuthScope(uri.getProtocol(), uri.getHost(), uri.getPort(), null, authSchema);
-					if (m_cledentialProvider.getCredentials(scope, null) == null) {
-						m_cledentialProvider.setCredentials(scope, credential);
-					}
+					m_cledentialProvider.setCredentials(new AuthScope(null, null, -1, null, authSchema), credential);
 				}
 			}
 

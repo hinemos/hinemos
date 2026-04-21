@@ -23,11 +23,13 @@ public class CloudConstant {
 	public static final String platform_Azure = "AZURE";
 	public static final String platform_GCP = "GOOGLECLOUD";
 	public static final String platform_OCI = "OCI";
+	public static final String platform_KVM = "KVM";
 	
 	// プライベートクラウドのロケーションID
 	public static final String location_ESXi = "ESXi";
 	public static final String location_vCenter = "vCenter";
 	public static final String location_HyperV = "Hyper-V";
+	public static final String location_KVM = "KVM";
 	
 	// AWS で使用する課金情報格納用のバケット名を格納する際のキー
 	public static final String eprop_awsS3Bucket = "aws_billingDetailS3Bucket";
@@ -111,6 +113,11 @@ public class CloudConstant {
 	public static final String apiKeyBasedAuthentication="apiKeyBasedAuthentication";
 	public static final String instancePrincipalAuthentication="instancePrincipalAuthentication";
 	public static final String authenticationType= "authenticationType";
+
+	// KVM Specific constants
+	public static final String UserName= "username";
+	public static final String Password= "password";
+	public static final String KeyFile= "keyfile";
 	
 	// Hyper-Vの接続に利用するプロトコル
 	// ※xCloudのHyperVConstantsにも同様のEnumがあるため整合性に注意してください

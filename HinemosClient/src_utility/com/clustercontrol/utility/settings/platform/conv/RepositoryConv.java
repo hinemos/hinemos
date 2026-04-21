@@ -1136,6 +1136,13 @@ public class RepositoryConv {
 				
 			}
 		}
+		// 備考情報が存在しない場合はHinemosクライアントとの登録動作にあわせるため、備考情報を生成する
+		if (nodeNoteList.size() == 0) {
+			NodeNoteInfoResponse createNodeNoteInfo = new NodeNoteInfoResponse();
+			createNodeNoteInfo.setNoteId(0);
+			createNodeNoteInfo.setNote("");
+			nodeNoteList.add(createNodeNoteInfo);
+		}
 		
 		return dto;
 		

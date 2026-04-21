@@ -163,7 +163,7 @@ public class RpaLogfileResultForwarder {
 			return;
 		}
 
-		transporter.add(result);
+		transporter.addWithWait(result);
 	}
 
 	private static class RpaLogfileResultProcessor implements TransportProcessor<MonitorResult> {

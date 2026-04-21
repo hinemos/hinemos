@@ -25,11 +25,12 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
-import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
+import org.openapitools.client.model.JobWaitRuleInfoResponse;
 
 import com.clustercontrol.jobmanagement.composite.JobTreeComposite;
 import com.clustercontrol.jobmanagement.dialog.JobDialog;
 import com.clustercontrol.jobmanagement.util.JobEditStateUtil;
+import com.clustercontrol.jobmanagement.util.JobInfoWrapper;
 import com.clustercontrol.jobmanagement.util.JobTreeItemUtil;
 import com.clustercontrol.jobmanagement.util.JobTreeItemWrapper;
 import com.clustercontrol.jobmanagement.view.JobListView;
@@ -124,6 +125,10 @@ public class CreateJobUnitAction extends AbstractHandler implements IElementUpda
 			jobInfo.setName("");
 			jobInfo.setType(JobInfoWrapper.TypeEnum.JOBUNIT);
 			jobInfo.setPropertyFull(true);
+			
+			//待ち条件情報を初期化する
+			JobWaitRuleInfoResponse waitRule = JobTreeItemUtil.createJobWaitRuleInfoResponse();
+			jobInfo.setWaitRule(waitRule);
 
 			item = new JobTreeItemWrapper();
 			item.setData(jobInfo);

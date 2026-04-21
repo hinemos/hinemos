@@ -10,6 +10,7 @@ package com.clustercontrol.agent;
 
 import java.io.File;
 import java.net.InetAddress;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -93,13 +94,22 @@ public class AgentRestClientWrapper {
 		}
 	}
 
-	public static void sendMessageToInternalEvent(final SendMessageRequest sendMessageRequest, String agentRequestId)
+	public static void sendMessageToInternalEvent(SendMessageRequest sendMessageRequest, String agentRequestId)
+			throws RestConnectFailed, HinemosUnknown, InvalidRole, InvalidUserPass, InvalidSetting, FacilityNotFound {
+		sendMessageToInternalEvent(sendMessageRequest, agentRequestId, AgentProperties.getProperty("facilityId"));
+	}
+
+	/**
+	 * エージェント自動登録時などエージェントで自認するファシリティIDが不定の場合など、
+	 * Agent.propertiesに指定されているファシリティID以外でマネージャへ通知する場合のみ利用する
+	 */
+	public static void sendMessageToInternalEvent(final SendMessageRequest sendMessageRequest, String agentRequestId, final String facilityId)
 			throws RestConnectFailed, HinemosUnknown, InvalidRole, InvalidUserPass, InvalidSetting, FacilityNotFound {
 		m_log.debug("sendMessageToEvent : start");
 		RestUrlSequentialExecuter<Void> proxy = new RestUrlSequentialExecuter<Void>(restKind) {
 			@Override
 			public Void executeMethod(DefaultApi apiClient) throws Exception {
-				apiClient.getApiClient().addDefaultHeader(RestHeaderConstant.AGENT_IDENTIFIER, AgentProperties.getProperty("facilityId") + InetAddress.getLocalHost().getHostName());
+				apiClient.getApiClient().addDefaultHeader(RestHeaderConstant.AGENT_IDENTIFIER, facilityId + InetAddress.getLocalHost().getHostName());
 				apiClient.agentSendMessageToInternalEvent(sendMessageRequest);
 				return null;
 			}
@@ -116,7 +126,7 @@ public class AgentRestClientWrapper {
 
 	public static SetJobStartResponse setJobStart(final String sessionId, final String jobunitId, final String jobId,
 			final String facilityId, final SetJobStartRequest setJobStartRequest, String agentRequestId)
-			throws RestConnectFailed, HinemosUnknown, InvalidRole, InvalidUserPass, InvalidSetting, JobInfoNotFound, SessionIdLocked {
+			throws RejectedExecutionException, RestConnectFailed, HinemosUnknown, InvalidRole, InvalidUserPass, InvalidSetting, JobInfoNotFound, SessionIdLocked {
 		m_log.debug("setJobStart : start");
 		RestUrlSequentialExecuter<SetJobStartResponse> proxy = new RestUrlSequentialExecuter<SetJobStartResponse>(restKind) {
 			@Override
@@ -129,7 +139,7 @@ public class AgentRestClientWrapper {
 		try {
 			proxy.setAgentRequestId(agentRequestId);
 			return proxy.proxyExecute();
-		} catch (RestConnectFailed | HinemosUnknown | InvalidRole | InvalidUserPass | InvalidSetting | JobInfoNotFound | SessionIdLocked def) {// 想定内例外
+		} catch (RejectedExecutionException | RestConnectFailed | HinemosUnknown | InvalidRole | InvalidUserPass | InvalidSetting | JobInfoNotFound | SessionIdLocked def) {// 想定内例外
 			throw def;
 		} catch (Exception unknown) { // 想定外の例外の場合HinemosUnknownに変換（通常ここには来ない想定）
 			throw new HinemosUnknown(unknown);
@@ -368,7 +378,7 @@ public class AgentRestClientWrapper {
 	}
 
 	public static GetScriptResponse getScript(final String sessionId, final String jobunitId, final String jobId)
-			throws RestConnectFailed, HinemosUnknown, InvalidRole, InvalidUserPass, InvalidSetting, JobInfoNotFound {
+			throws RejectedExecutionException, RestConnectFailed, HinemosUnknown, InvalidRole, InvalidUserPass, InvalidSetting, JobInfoNotFound {
 		m_log.debug("getScript : start");
 		RestUrlSequentialExecuter<GetScriptResponse> proxy = new RestUrlSequentialExecuter<GetScriptResponse>(restKind) {
 			@Override
@@ -379,7 +389,7 @@ public class AgentRestClientWrapper {
 		};
 		try {
 			return proxy.proxyExecute();
-		} catch (RestConnectFailed | HinemosUnknown | InvalidRole | InvalidUserPass | InvalidSetting | JobInfoNotFound def) {// 想定内例外
+		} catch (RejectedExecutionException | RestConnectFailed | HinemosUnknown | InvalidRole | InvalidUserPass | InvalidSetting | JobInfoNotFound def) {// 想定内例外
 			throw def;
 		} catch (Exception unknown) { // 想定外の例外の場合HinemosUnknownに変換（通常ここには来ない想定）
 			throw new HinemosUnknown(unknown);

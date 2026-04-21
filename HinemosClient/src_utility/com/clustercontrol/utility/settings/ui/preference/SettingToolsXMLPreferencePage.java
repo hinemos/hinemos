@@ -982,56 +982,59 @@ implements IWorkbenchPreferencePage {
 			reportTemplate.setTextLimit(256);
 			this.addField(reportTemplate);
 			
-			// RPAのグループ
-			Group groupRpa = new Group(groupXMLFile, SWT.SHADOW_NONE);
-			gridData = new GridData();
-			gridData.horizontalAlignment = GridData.FILL;
-			gridData.grabExcessHorizontalSpace = true;
-			gridData.horizontalSpan = 2;
-			groupRpa.setLayoutData(gridData);
-			groupRpa.setText(Messages.getString("rpa"));
+			// RPA無効が指定されていないならRPA関連を有効とする
+			if (!options.contains(OptionUtil.TYPE_NORPA)) {
+				// RPAのグループ
+				Group groupRpa = new Group(groupXMLFile, SWT.SHADOW_NONE);
+				gridData = new GridData();
+				gridData.horizontalAlignment = GridData.FILL;
+				gridData.grabExcessHorizontalSpace = true;
+				gridData.horizontalSpan = 2;
+				groupRpa.setLayoutData(gridData);
+				groupRpa.setText(Messages.getString("rpa"));
 
-			// RPAシナリオタグ
-			rpaScenarioTag = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_SCENARIO_TAG,
-					HinemosModuleConstant.STRING_RPA_SCENARIO_TAG,
-					groupRpa);
-			rpaScenarioTag.setTextLimit(256);
-			this.addField(rpaScenarioTag);
+				// RPAシナリオタグ
+				rpaScenarioTag = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_SCENARIO_TAG,
+						HinemosModuleConstant.STRING_RPA_SCENARIO_TAG,
+						groupRpa);
+				rpaScenarioTag.setTextLimit(256);
+				this.addField(rpaScenarioTag);
 
-			// RPAシナリオ実績作成設定
-			rpaScenarioOperationResultCreateSetting = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
-					HinemosModuleConstant.STRING_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
-					groupRpa);
-			rpaScenarioOperationResultCreateSetting.setTextLimit(256);
-			this.addField(rpaScenarioOperationResultCreateSetting);
-			
-			// RPA管理ツールアカウント
-			rpaManagementToolAccount = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_MANAGEMENT_TOOL_ACCOUNT,
-					HinemosModuleConstant.STRING_RPA_MANAGEMENT_TOOL_ACCOUNT,
-					groupRpa);
-			rpaManagementToolAccount.setTextLimit(256);
-			this.addField(rpaManagementToolAccount);
-			
-			// 自動化効果計算マスタ
-			rpaScenarioCoefficientPattern = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_SCENARIO_COEFFICIENT_PATTERN,
-					HinemosModuleConstant.STRING_RPA_SCENARIO_COEFFICIENT_PATTERN,
-					groupRpa);
-			rpaScenarioCoefficientPattern.setTextLimit(256);
-			this.addField(rpaScenarioCoefficientPattern);
-			
-			// RPAログファイル監視
-			monitorRpaLogfile = new StringFieldEditor(XMLConstant.DEFAULT_XML_MONITOR_RPA_LOGFILE,
-					HinemosModuleConstant.STRING_MONITOR_RPA_LOGFILE,
-					groupRpa);
-			monitorRpaLogfile.setTextLimit(256);
-			this.addField(monitorRpaLogfile);
-			
-			// RPA管理ツール監視
-			monitorRpaManagementToolService = new StringFieldEditor(XMLConstant.DEFAULT_XML_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
-					HinemosModuleConstant.STRING_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
-					groupRpa);
-			monitorRpaManagementToolService.setTextLimit(256);
-			this.addField(monitorRpaManagementToolService);
+				// RPAシナリオ実績作成設定
+				rpaScenarioOperationResultCreateSetting = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
+						HinemosModuleConstant.STRING_RPA_SCENARIO_OPERATION_RESULT_CREATE_SETTING,
+						groupRpa);
+				rpaScenarioOperationResultCreateSetting.setTextLimit(256);
+				this.addField(rpaScenarioOperationResultCreateSetting);
+				
+				// RPA管理ツールアカウント
+				rpaManagementToolAccount = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_MANAGEMENT_TOOL_ACCOUNT,
+						HinemosModuleConstant.STRING_RPA_MANAGEMENT_TOOL_ACCOUNT,
+						groupRpa);
+				rpaManagementToolAccount.setTextLimit(256);
+				this.addField(rpaManagementToolAccount);
+				
+				// 自動化効果計算マスタ
+				rpaScenarioCoefficientPattern = new StringFieldEditor(XMLConstant.DEFAULT_XML_RPA_SCENARIO_COEFFICIENT_PATTERN,
+						HinemosModuleConstant.STRING_RPA_SCENARIO_COEFFICIENT_PATTERN,
+						groupRpa);
+				rpaScenarioCoefficientPattern.setTextLimit(256);
+				this.addField(rpaScenarioCoefficientPattern);
+				
+				// RPAログファイル監視
+				monitorRpaLogfile = new StringFieldEditor(XMLConstant.DEFAULT_XML_MONITOR_RPA_LOGFILE,
+						HinemosModuleConstant.STRING_MONITOR_RPA_LOGFILE,
+						groupRpa);
+				monitorRpaLogfile.setTextLimit(256);
+				this.addField(monitorRpaLogfile);
+				
+				// RPA管理ツール監視
+				monitorRpaManagementToolService = new StringFieldEditor(XMLConstant.DEFAULT_XML_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+						HinemosModuleConstant.STRING_MONITOR_RPA_MANAGEMENT_TOOL_SERVICE,
+						groupRpa);
+				monitorRpaManagementToolService.setTextLimit(256);
+				this.addField(monitorRpaManagementToolService);
+			}
 		}
 
 		// AWSのグループ

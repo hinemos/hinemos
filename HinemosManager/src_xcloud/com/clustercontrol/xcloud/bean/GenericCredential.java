@@ -7,19 +7,12 @@
  */
 package com.clustercontrol.xcloud.bean;
 
-import java.util.HashMap;
-
 import javax.xml.bind.annotation.XmlRootElement;
-
-import org.apache.log4j.Logger;
 
 import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.validation.annotation.ElementId;
 import com.clustercontrol.xcloud.validation.annotation.NotNull;
 import com.clustercontrol.xcloud.validation.annotation.Size;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @XmlRootElement(namespace = "http://xcloud.ws.clustercontrol.com")
 public class GenericCredential extends Credential {
@@ -67,6 +60,20 @@ public class GenericCredential extends Credential {
 
 	@Override
 	public boolean match(Credential obj) {
+		return equals(obj);
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((jsonCredentialInfo == null) ? 0 : jsonCredentialInfo.hashCode());
+		result = prime * result + ((platform == null) ? 0 : platform.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -74,18 +81,15 @@ public class GenericCredential extends Credential {
 		if (getClass() != obj.getClass())
 			return false;
 		GenericCredential other = (GenericCredential) obj;
-		HashMap<String, String> jsonCredentialInfoMap = new HashMap<>();
-		ObjectMapper om = new ObjectMapper();
-		try {
-			jsonCredentialInfoMap = om.readValue(jsonCredentialInfo, new TypeReference<HashMap<String, String>>() {
-			});
-		} catch (JsonProcessingException e) {
-			Logger.getLogger(this.getClass()).error("match():Unable to parse JsonString to Map" + e.getMessage());
-		}
-		if (jsonCredentialInfoMap.get("PrivateKeyFileName").isEmpty()) {
+		if (jsonCredentialInfo == null) {
 			if (other.jsonCredentialInfo != null)
 				return false;
 		} else if (!jsonCredentialInfo.equals(other.jsonCredentialInfo))
+			return false;
+		if (platform == null) {
+			if (other.platform != null)
+				return false;
+		} else if (!platform.equals(other.platform))
 			return false;
 		return true;
 	}

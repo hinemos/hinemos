@@ -854,9 +854,6 @@ public class CollectRestEndpoints {
 
 		CommonValidator.validateNull(MessageConstant.OWNER_ROLE_ID.getMessage(), ownerRoleId);
 		
-		// カレントユーザがオーナーロールに所属しているかチェックする
-		CommonValidator.validateCurrentUserBelongRole(ownerRoleId);
-		
 		Map<String, CollectKeyInfo> collectKeyMapForAnalytics = new CollectControllerBean().getCollectKeyMapForAnalytics(facilityId, ownerRoleId);
 
 		Map<String, CollectKeyInfoResponseP1> map = new ConcurrentHashMap<>();

@@ -716,11 +716,6 @@ public class MonitorJobWorker {
 				prevMonitorValueMap.remove(entry.getKey());
 			}
 		}
-
-		/** RunHistory削除 */
-		for (RunInstructionInfo runInstructionInfo : runInstructionInfoList) {
-			RunHistoryUtil.delRunHistory(runInstructionInfo);
-		}
 	}
 
 	/**

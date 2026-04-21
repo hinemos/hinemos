@@ -196,9 +196,9 @@ public class DefaultLayoutSettingManager {
 		
 		public static LayoutRoot parseLayoutXml(File layoutFilePath) {
 			LayoutRoot rootLayout = null;
-			try {
+			try (FileInputStream fis = new FileInputStream(layoutFilePath)) {
 				DocumentBuilder documentbuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-				Document document = documentbuilder.parse(new FileInputStream(layoutFilePath));
+				Document document = documentbuilder.parse(fis);
 				Element root = document.getDocumentElement();
 				if (TAG_ROOT.equals(root.getNodeName())) {
 					

@@ -209,7 +209,23 @@
 
 	</target>
 	
-	<target name="jar_common" depends="compile,manifest" description="Generate JAR file with Message File Copy">
+	<target name="compile_jar_common" depends="clean">
+		<javac 
+			destdir="${build.dir}/${class.dir}" 
+			failonerror="true" 
+			classpathref="id.compile.classpath.local" 
+			sourcepathref="id.compile.sourcepath.local"
+			source="${compile.version.base}" 
+			target="${compile.version.base}"
+			bootclasspath="${boot.classpath}"
+			includeAntRuntime="false"
+			encoding="${compile.encode}"
+			debug="on">
+			<src path="${src.dir}" />
+		</javac>
+	</target>
+	
+	<target name="jar_common" depends="compile_jar_common,manifest" description="Generate JAR file with Message File Copy">
 		<jar jarfile="${jar.dir}/${jar.file}" manifest="${build.dir}/MANIFEST.MF">
 			<fileset dir="${build.dir}/${class.dir}">
 				<include name="**/*.class*" />

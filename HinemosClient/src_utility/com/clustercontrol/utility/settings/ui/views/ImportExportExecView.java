@@ -137,6 +137,18 @@ public class ImportExportExecView extends CommonViewPart {
 	}
 
 	/**
+	 * ツリーとXMLファイル一覧を更新します。ログイン契機で呼ばれます。
+	 *
+	 */
+	public void updateForLogin() {
+		// ツリーとXMLファイル一覧を更新
+		m_FuncTree.update();
+		m_XMLList.update();
+		// ツリーのプルダウンに自動でマネージャが選択された状態にする
+		m_FuncTree.selectDefaultManager();
+	}
+
+	/**
 	 * 機能ツリー用のコンポジットを返します。
 	 *
 	 * @return 機能ー用のコンポジット

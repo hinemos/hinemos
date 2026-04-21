@@ -320,9 +320,9 @@ public class ClusterControlWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor
 				id = SettingToolsPerspective.ID;
 			} else if (urlInfo.equals(RestLoginManager.URL_REPORTING) && options.contains(OptionUtil.TYPE_ENTERPRISE)) {
 				id = ReportingPerspective.ID;
-			} else if (urlInfo.equals(RestLoginManager.URL_RPA_SETTING) && options.contains(OptionUtil.TYPE_ENTERPRISE)) {
+			} else if (urlInfo.equals(RestLoginManager.URL_RPA_SETTING) && options.contains(OptionUtil.TYPE_ENTERPRISE) && !options.contains(OptionUtil.TYPE_NORPA)) {
 				id = RpaSettingPerspective.ID;
-			} else if (urlInfo.equals(RestLoginManager.URL_RPA_SCENARIO_OPERATION_RESULT) && options.contains(OptionUtil.TYPE_ENTERPRISE)) {
+			} else if (urlInfo.equals(RestLoginManager.URL_RPA_SCENARIO_OPERATION_RESULT) && options.contains(OptionUtil.TYPE_ENTERPRISE) && !options.contains(OptionUtil.TYPE_NORPA)) {
 				id = RpaScenarioOperationResultPerspective.ID;
 			}
 

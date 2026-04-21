@@ -8,8 +8,6 @@
 
 package com.clustercontrol.reporting.factory;
 
-import java.util.Date;
-
 import com.clustercontrol.bean.FunctionPrefixEnum;
 import com.clustercontrol.bean.ScheduleConstant;
 import com.clustercontrol.commons.util.NotifyGroupIdGenerator;
@@ -23,6 +21,7 @@ import com.clustercontrol.reporting.bean.ReportingTypeConstant;
 import com.clustercontrol.reporting.bean.ReportingInfo;
 import com.clustercontrol.reporting.model.ReportingInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
+import com.clustercontrol.util.HinemosTime;
 
 /**
  * レポーティング情報を変更するためのクラスです。
@@ -78,7 +77,7 @@ public class ModifyReporting {
 		entity.setValidFlg(info.getValidFlg());
 		entity.setOutputType(info.getOutputType());
 		entity.setUpdateUser(name);
-		entity.setUpdateDate(new Date().getTime());
+		entity.setUpdateDate(HinemosTime.currentTimeMillis());
 		
 		if (info.getNotifyRelationList() != null && info.getNotifyRelationList().size() > 0) {
 			for (NotifyRelationInfo notifyRelationInfo : info.getNotifyRelationList()) {

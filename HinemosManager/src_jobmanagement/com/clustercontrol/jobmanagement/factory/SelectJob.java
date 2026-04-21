@@ -43,6 +43,7 @@ import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.fault.JobInfoNotFound;
 import com.clustercontrol.fault.JobMasterNotFound;
+import com.clustercontrol.fault.JobRpaScreenshotFileNotFound;
 import com.clustercontrol.fault.MonitorNotFound;
 import com.clustercontrol.fault.NotifyNotFound;
 import com.clustercontrol.fault.ObjectPrivilege_InvalidRole;
@@ -3415,11 +3416,11 @@ public class SelectJob {
 	 * RPAシナリオジョブのスクリーンショットを検索します。
 	 * 
 	 * @return スクリーンショット情報
-	 * @throws JobMasterNotFound
-	 * @throws InvalidRole
+	 * @throws JobRpaScreenshotFileNotFound 
+	 * @throws ObjectPrivilege_InvalidRole
 	 * @throws HinemosUnknown
 	 */
-	public RpaJobScreenshot getRpaScreenshot(String sessionId, String jobunitId, String jobId, String facilityId, Long regDate) throws ObjectPrivilege_InvalidRole {
+	public RpaJobScreenshot getRpaScreenshot(String sessionId, String jobunitId, String jobId, String facilityId, Long regDate) throws ObjectPrivilege_InvalidRole, JobRpaScreenshotFileNotFound {
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
 			m_log.debug("getRpaScreenshot() sessionId=" + sessionId
 					+ ", jobunitId=" + jobunitId 
@@ -3428,6 +3429,13 @@ public class SelectJob {
 			HinemosEntityManager em = jtm.getEntityManager();
 			JobRpaScreenshotEntity entity = em.find(JobRpaScreenshotEntity.class,
 					new JobRpaScreenshotEntityPK(sessionId, jobunitId, jobId, facilityId, regDate), ObjectPrivilegeMode.READ);
+			if(entity == null){
+				JobRpaScreenshotFileNotFound je = new JobRpaScreenshotFileNotFound("JobRpaScreenshotEntity.findByPrimaryKey"
+						+ ", sessionId = " + sessionId+ ", jobunitId = " + jobunitId + ", jobId = " + jobId + ", facilityId = " + facilityId  + ", regDate = " + regDate  );
+				m_log.warn("getRpaScreenshot() : "
+						+ je.getClass().getSimpleName() + ", " + je.getMessage());
+				throw je;
+			}
 			RpaJobScreenshot dto = new RpaJobScreenshot();
 			dto.setSessionId(entity.getId().getSessionId());
 			dto.setJobunitId(entity.getId().getJobunitId());

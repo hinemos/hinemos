@@ -16,7 +16,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.rap.addons.fileupload.FileUploadEvent;
-import org.eclipse.rap.addons.fileupload.FileUploadHandler;
 import org.eclipse.rap.addons.fileupload.FileUploadListener;
 import org.eclipse.rap.rwt.service.ServerPushSession;
 import org.eclipse.rap.rwt.widgets.FileUpload;
@@ -38,6 +37,7 @@ import com.clustercontrol.bean.SizeConstant;
 import com.clustercontrol.client.ui.util.FileDownloader;
 import com.clustercontrol.composite.action.StringVerifyListener;
 import com.clustercontrol.jobmanagement.dialog.ManagerDistributionDialog;
+import com.clustercontrol.util.FileUploadHandlerWrapper;
 import com.clustercontrol.util.HinemosMessage;
 import com.clustercontrol.util.Messages;
 import com.clustercontrol.util.WidgetTestUtil;
@@ -167,13 +167,14 @@ public class ScriptComponent {
 		});
 	}
 
+	FileUploadHandlerWrapper uploadHandler;
 	ScriptUploadReceiver receiver = null;
 	ServerPushSession pushSession = null;
 
 	private String startUploadReceiver() {
 		receiver = new ScriptUploadReceiver();
 		pushSession = new ServerPushSession();
-		FileUploadHandler uploadHandler = new FileUploadHandler(receiver);
+		uploadHandler = new FileUploadHandlerWrapper(receiver);
 		uploadHandler.addUploadListener(new FileUploadListener() {
 			@Override
 			public void uploadProgress(FileUploadEvent event) {
@@ -318,6 +319,12 @@ public class ScriptComponent {
 				
 				FileDownloader.openBrowser(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), selectedFilePath, scriptName);
 			}
+		}
+	}
+
+	public void close() {
+		if (uploadHandler != null) {
+			uploadHandler.dispose();
 		}
 	}
 }

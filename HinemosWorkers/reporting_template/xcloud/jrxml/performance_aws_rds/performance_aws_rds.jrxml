@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Created with Jaspersoft Studio version last-->
+<!-- Created with Jaspersoft Studio version 6.21.2.final using JasperReports Library version 6.21.2-8434a0bd7c3bbc37cbf916f2968d35e4b165821a  -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="performance_detail" pageWidth="595" pageHeight="842" columnWidth="595" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" isSummaryWithPageHeaderAndFooter="true" uuid="b3555393-5ca6-4c3c-a841-04fcb1f6eb87">
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
 	<property name="net.sf.jasperreports.awt.ignore.missing.font" value="true"/>
@@ -181,7 +181,11 @@
 					<timeSeriesPlot isShowShapes="false">
 						<plot/>
 						<timeAxisFormat>
-							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="7"/>
+								</tickLabelFont>
+							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.2}]]></valueAxisLabelExpression>
 						<valueAxisFormat>
@@ -299,7 +303,11 @@
 					<timeSeriesPlot isShowShapes="false">
 						<plot/>
 						<timeAxisFormat>
-							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="7"/>
+								</tickLabelFont>
+							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.1}]]></valueAxisLabelExpression>
 						<valueAxisFormat>
@@ -437,7 +445,7 @@
 						<timeAxisFormat>
 							<axisFormat tickLabelMask="yyyy-MM-dd">
 								<tickLabelFont>
-									<font size="8"/>
+									<font size="7"/>
 								</tickLabelFont>
 							</axisFormat>
 						</timeAxisFormat>
@@ -456,10 +464,11 @@
 				</timeSeriesChart>
 				<timeSeriesChart>
 					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
-						<reportElement x="36" y="510" width="260" height="175" uuid="45ac7674-c19d-4902-8bb8-3119a9802844">
+						<reportElement x="20" y="510" width="280" height="175" uuid="45ac7674-c19d-4902-8bb8-3119a9802844">
 							<property name="local_mesure_unity" value="pixel"/>
 							<property name="local_mesure_unitwidth" value="pixel"/>
 							<property name="com.jaspersoft.studio.unit.width" value="px"/>
+							<property name="com.jaspersoft.studio.unit.x" value="px"/>
 						</reportElement>
 						<chartTitle>
 							<titleExpression><![CDATA[$P{chart.title.5}]]></titleExpression>
@@ -537,13 +546,17 @@
 						<timeAxisFormat>
 							<axisFormat tickLabelMask="yyyy-MM-dd">
 								<tickLabelFont>
-									<font size="8"/>
+									<font size="5"/>
 								</tickLabelFont>
 							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.5}]]></valueAxisLabelExpression>
 						<valueAxisFormat>
-							<axisFormat/>
+							<axisFormat>
+								<tickLabelFont>
+									<font size="0"/>
+								</tickLabelFont>
+							</axisFormat>
 						</valueAxisFormat>
 						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
 						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
@@ -635,7 +648,7 @@
 									<font size="10"/>
 								</labelFont>
 								<tickLabelFont>
-									<font size="8"/>
+									<font size="7"/>
 								</tickLabelFont>
 							</axisFormat>
 						</timeAxisFormat>
@@ -654,7 +667,7 @@
 				</timeSeriesChart>
 				<timeSeriesChart>
 					<chart evaluationTime="Report" customizerClass="com.clustercontrol.reporting.chartcustomizer.TimeSeriesChartCustomizer">
-						<reportElement x="300" y="510" width="240" height="175" uuid="cf8422d1-b8b0-4d98-87dc-e291162bdbe1">
+						<reportElement x="300" y="510" width="280" height="175" uuid="cf8422d1-b8b0-4d98-87dc-e291162bdbe1">
 							<property name="local_mesure_unity" value="pixel"/>
 							<property name="local_mesure_unitwidth" value="pixel"/>
 							<property name="com.jaspersoft.studio.unit.width" value="px"/>
@@ -735,13 +748,17 @@
 						<timeAxisFormat>
 							<axisFormat tickLabelMask="yyyy-MM-dd">
 								<tickLabelFont>
-									<font size="8"/>
+									<font size="5"/>
 								</tickLabelFont>
 							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.6}]]></valueAxisLabelExpression>
 						<valueAxisFormat>
-							<axisFormat/>
+							<axisFormat>
+								<tickLabelFont>
+									<font size="9"/>
+								</tickLabelFont>
+							</axisFormat>
 						</valueAxisFormat>
 						<domainAxisMinValueExpression><![CDATA[$P{START_DATE}]]></domainAxisMinValueExpression>
 						<domainAxisMaxValueExpression><![CDATA[$P{END_DATE}]]></domainAxisMaxValueExpression>
@@ -872,7 +889,11 @@
 					<timeSeriesPlot isShowShapes="false">
 						<plot/>
 						<timeAxisFormat>
-							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="7"/>
+								</tickLabelFont>
+							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.8}]]></valueAxisLabelExpression>
 						<valueAxisFormat>
@@ -967,7 +988,11 @@
 					<timeSeriesPlot isShowShapes="false">
 						<plot/>
 						<timeAxisFormat>
-							<axisFormat tickLabelMask="yyyy-MM-dd"/>
+							<axisFormat tickLabelMask="yyyy-MM-dd">
+								<tickLabelFont>
+									<font size="7"/>
+								</tickLabelFont>
+							</axisFormat>
 						</timeAxisFormat>
 						<valueAxisLabelExpression><![CDATA[$P{label.7}]]></valueAxisLabelExpression>
 						<valueAxisFormat>
@@ -1062,7 +1087,7 @@
 						<timeAxisFormat>
 							<axisFormat tickLabelMask="yyyy-MM-dd">
 								<tickLabelFont>
-									<font size="8"/>
+									<font size="7"/>
 								</tickLabelFont>
 							</axisFormat>
 						</timeAxisFormat>
@@ -1206,7 +1231,7 @@
 						<timeAxisFormat>
 							<axisFormat tickLabelMask="yyyy-MM-dd">
 								<tickLabelFont>
-									<font size="8"/>
+									<font size="7"/>
 								</tickLabelFont>
 							</axisFormat>
 						</timeAxisFormat>
@@ -1308,7 +1333,7 @@
 						<timeAxisFormat>
 							<axisFormat tickLabelMask="yyyy-MM-dd">
 								<tickLabelFont>
-									<font size="8"/>
+									<font size="7"/>
 								</tickLabelFont>
 							</axisFormat>
 						</timeAxisFormat>
@@ -1411,7 +1436,7 @@
 						<timeAxisFormat>
 							<axisFormat tickLabelMask="yyyy-MM-dd">
 								<tickLabelFont>
-									<font size="8"/>
+									<font size="7"/>
 								</tickLabelFont>
 							</axisFormat>
 						</timeAxisFormat>
@@ -1554,7 +1579,7 @@
 						<timeAxisFormat>
 							<axisFormat tickLabelMask="yyyy-MM-dd">
 								<tickLabelFont>
-									<font size="8"/>
+									<font size="7"/>
 								</tickLabelFont>
 							</axisFormat>
 						</timeAxisFormat>

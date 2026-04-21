@@ -588,6 +588,37 @@ public class JpaTransactionManager implements AutoCloseable {
 		em.setProperty(CALLBACKS, callbacks);
 	}
 
+	 /**
+	 * トランザクションAPIの前処理・後処理に関する排他callbackクラスを追加する。
+	 * 既に追加されているcallbackを指定された場合、追加済みのcallbackクラスを返却し、再追加は行わない。
+	 * 追加されていないcallbackを指定された場合のみ新規追加を行う。
+	 * @param <T>
+	 * 
+	 * @param callback 追加するcallbackクラス
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends JpaTransactionCallback> T addExclusiveCallback(T callback) {
+		if (callback == null) {
+			m_log.warn("skipped exclusive callback addition : null");
+			return callback;
+		}
+		for (JpaTransactionCallback obj : getCallbacks()) {
+			if (!ExclusiveJpaTransactionCallback.class.isInstance(obj)) {
+				continue;
+			}
+			ExclusiveJpaTransactionCallback exclusiveCallback = (ExclusiveJpaTransactionCallback) obj;
+			if (exclusiveCallback.isDuplicate(callback)) {
+				if (m_log.isDebugEnabled()) {
+					m_log.debug("skipped exclusive callback addition : " + callback.getClass().getName());
+				}
+				return (T) exclusiveCallback;
+			}
+		}
+
+		addCallback(callback);
+		return callback;
+	}
+
 	public int sizeCallback() {
 		return getCallbacks().size();
 	}

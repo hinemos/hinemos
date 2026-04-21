@@ -16,9 +16,15 @@ import com.clustercontrol.xcloud.CloudManagerException;
 @XmlSeeAlso({AccessKeyCredential.class, UserCredential.class})
 public abstract class Credential {
 	public interface IVisitor {
-		void visit(AccessKeyCredential credential) throws CloudManagerException;
-		default void visit(GenericCredential credential) throws CloudManagerException{};
-		void visit(UserCredential credential) throws CloudManagerException;
+		default void visit(AccessKeyCredential credential) throws CloudManagerException {
+			throw new UnsupportedOperationException();
+		}
+		default void visit(GenericCredential credential) throws CloudManagerException {
+			throw new UnsupportedOperationException();
+		}
+		default void visit(UserCredential credential) throws CloudManagerException {
+			throw new UnsupportedOperationException();
+		}
 	}
 	public static abstract class Visitor implements IVisitor {
 		@Override
@@ -35,10 +41,15 @@ public abstract class Credential {
 		}
 	}
 	public interface ITransformer<T> {
-		T transform(AccessKeyCredential credential) throws CloudManagerException;
-		T transform(GenericCredential credential) throws CloudManagerException;
-		T transform(UserCredential credential) throws CloudManagerException;
-		
+		default T transform(AccessKeyCredential credential) throws CloudManagerException {
+			throw new UnsupportedOperationException();
+		}
+		default T transform(GenericCredential credential) throws CloudManagerException  {
+			throw new UnsupportedOperationException();
+		}
+		default T transform(UserCredential credential) throws CloudManagerException  {
+			throw new UnsupportedOperationException();
+		}
 	}
 
 	public Credential() {

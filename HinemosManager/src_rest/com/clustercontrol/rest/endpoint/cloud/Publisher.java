@@ -21,6 +21,7 @@ import org.glassfish.grizzly.ssl.SSLEngineConfigurator;
 import org.glassfish.jersey.server.ResourceConfig;
 
 import com.clustercontrol.commons.util.HinemosPropertyCommon;
+import com.clustercontrol.platform.HinemosPropertyDefault;
 import com.clustercontrol.plugin.impl.RestServiceClientPlugin;
 import com.clustercontrol.plugin.util.RestApiHttpServerFactory;
 
@@ -85,7 +86,7 @@ public class Publisher implements AutoCloseable {
 		SSLContextConfigurator sslContext = new SSLContextConfigurator();
 		String protocol = HinemosPropertyCommon.ws_https_protocol.getStringValue();
 		sslContext.setSecurityProtocol(protocol);
-		String keystorePath = HinemosPropertyCommon.ws_https_keystore_path.getStringValue();
+		String keystorePath = HinemosPropertyDefault.ws_https_keystore_path.getStringValue();
 		sslContext.setKeyStoreFile(keystorePath);
 		String keystorePassword = HinemosPropertyCommon.ws_https_keystore_password.getStringValue();
 		sslContext.setKeyStorePass(keystorePassword);

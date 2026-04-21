@@ -19,6 +19,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 import org.openapitools.client.model.EventCustomCommandInfoResponse;
 import org.openapitools.client.model.EventCustomCommandResultResponse;
 import org.openapitools.client.model.EventCustomCommandResultRootResponse;
@@ -27,7 +28,6 @@ import com.clustercontrol.dialog.CommonDialog;
 import com.clustercontrol.monitor.bean.EventCustomCommandStatusConstant;
 import com.clustercontrol.monitor.composite.EventCustomCommandResultComposite;
 import com.clustercontrol.monitor.run.bean.MultiManagerEventDisplaySettingInfo;
-import com.clustercontrol.util.DateTimeStringConverter;
 import com.clustercontrol.util.Messages;
 /**
  * 監視履歴[イベント・カスタムコマンドの実行結果]ダイアログクラス<BR>
@@ -111,12 +111,15 @@ public class EventCustomCommandResultDialog extends CommonDialog {
 			parent.setLayout(layout);
 			
 			// ヘッダメッセージ
-			Label managerText = new Label(parent, SWT.LEFT);
+			Text managerText = new Text(parent, SWT.READ_ONLY | SWT.WRAP | SWT.MULTI | SWT.V_SCROLL);
 			WidgetTestUtil.setTestId(this, "dialog.monitor.events.customcommand.result.headermsg", managerText);
 			gridData = new GridData();
 			gridData.horizontalAlignment = GridData.FILL;
+			gridData.verticalAlignment = GridData.FILL;
 			gridData.grabExcessHorizontalSpace = true;
+			gridData.grabExcessVerticalSpace = true;
 			gridData.horizontalSpan = 5;
+			gridData.heightHint = 30;
 			managerText.setLayoutData(gridData);
 			managerText.setText(Messages.getString("dialog.monitor.events.customcommand.result.headermsg", new String[]{customCommnadInfo.getDisplayName(), managerName}));
 	

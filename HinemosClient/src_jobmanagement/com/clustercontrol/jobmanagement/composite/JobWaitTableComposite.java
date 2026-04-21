@@ -216,11 +216,13 @@ public class JobWaitTableComposite extends Composite {
 						dialog.setInputData(m_objectGroupList.get(orderNo));
 						if (dialog.open() == IDialogConstants.OK_ID) {
 							JobObjectGroupInfoResponse groupInfo = dialog.getInputData();
-							Integer maxOrderNo = getMaxOrderNo(m_objectGroupList);
-							groupInfo.setOrderNo(maxOrderNo + 1);
-							m_objectGroupList.add(groupInfo);
-							reflectObjectGroup();
-							m_selectItem = null;
+							if (groupInfo != null) {
+								Integer maxOrderNo = getMaxOrderNo(m_objectGroupList);
+								groupInfo.setOrderNo(maxOrderNo + 1);
+								m_objectGroupList.add(groupInfo);
+								reflectObjectGroup();
+								m_selectItem = null;
+							}
 						}
 					}
 				}

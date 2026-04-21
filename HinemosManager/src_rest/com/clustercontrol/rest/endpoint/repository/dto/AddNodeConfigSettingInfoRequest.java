@@ -16,6 +16,7 @@ import com.clustercontrol.rest.annotation.beanconverter.RestBeanConvertEnum;
 import com.clustercontrol.rest.dto.RequestDto;
 import com.clustercontrol.rest.endpoint.notify.dto.NotifyRelationInfoRequest;
 import com.clustercontrol.rest.endpoint.repository.dto.enumtype.NodeConfigRunIntervalEnum;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class AddNodeConfigSettingInfoRequest implements RequestDto {
 
@@ -23,6 +24,7 @@ public class AddNodeConfigSettingInfoRequest implements RequestDto {
 	private String settingName;
 	private String description;
 	private String facilityId;
+	@JsonIgnore
 	private String scope;
 	@RestBeanConvertEnum
 	private NodeConfigRunIntervalEnum runInterval;

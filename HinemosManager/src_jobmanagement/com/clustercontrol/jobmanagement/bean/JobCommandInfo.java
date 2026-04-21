@@ -11,7 +11,9 @@ package com.clustercontrol.jobmanagement.bean;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.xml.bind.annotation.XmlType;
 
@@ -28,6 +30,7 @@ import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.ProcessingMet
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.enumtype.StopTypeEnum;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.ConstantToEnumSerializer;
 import com.clustercontrol.rest.endpoint.jobmanagement.dto.serializer.LanguageTranslateSerializer;
+import com.clustercontrol.util.MessageConstant;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -762,13 +765,31 @@ public class JobCommandInfo implements Serializable, RequestDto {
 			errorJobOutputInfo.correlationCheck(true);
 		}
 		if (jobCommandParamList != null) {
+			Set<String> existIds = new HashSet<String>();
 			for (JobCommandParam req : jobCommandParamList) {
 				req.correlationCheck();
+				//ID重複チェック
+				if (req.getParamId() != null && !req.getParamId().isEmpty()) {
+					if (existIds.contains(req.getParamId())) {
+						String[] args ={ req.getParamId(),  MessageConstant.JOB_RESULT_VAL_ID.getMessage() };
+						throw new InvalidSetting(MessageConstant.MESSAGE_DUPLICATED.getMessage(args));
+					}
+					existIds.add(req.getParamId());
+				}
 			}
 		}
 		if (envVariable != null) {
+			Set<String> existIds = new HashSet<String>();
 			for (JobEnvVariableInfo req : envVariable) {
 				req.correlationCheck();
+				//ID重複チェック
+				if (req.getEnvVariableId() != null && !req.getEnvVariableId().isEmpty()) {
+					if (existIds.contains(req.getEnvVariableId())) {
+						String[] args ={ req.getEnvVariableId(),  MessageConstant.JOB_ENV_ID.getMessage() };
+						throw new InvalidSetting(MessageConstant.MESSAGE_DUPLICATED.getMessage(args));
+					}
+					existIds.add(req.getEnvVariableId());
+				}
 			}
 		}
 		//標準エラー出力設定の出力先が同じとする設定の場合、標準出力の設定がなかったら不正な設定とする

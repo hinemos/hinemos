@@ -72,6 +72,23 @@ public class CustomTrapPlugin implements HinemosPlugin {
 
 	}
 
+	public static long getReceivedCount() {
+		return customtrapService.getReceivedCount();
+	}
+
+	public static long getNotifiedCount() {
+		return customtrapService.getNotifiedCount();
+	}
+
+	public static long getDiscardedCount() {
+		return customtrapService.getDiscardedCount();
+	}
+	
+	public static int getQueuedCount() {
+		return customtrapService.getQueuedCount();
+	}
+	
+
 	/**
 	 * HAからのデータ受信時処理
 	 * @param custonTraps 受信したカスタムトラップ

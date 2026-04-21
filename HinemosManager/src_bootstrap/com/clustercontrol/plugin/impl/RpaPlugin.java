@@ -41,6 +41,7 @@ public class RpaPlugin implements HinemosPlugin {
 	@Override
 	public Set<String> getDependency() {
 		Set<String> dependency = new HashSet<String>();
+//		dependency.add(com.clustercontrol.plugin.enterprise.EnterprisePlugin.class.getName());
 		dependency.add(SchedulerPlugin.class.getName());
 		dependency.add(Log4jReloadPlugin.class.getName());
 		dependency.add(CacheInitializerPlugin.class.getName());

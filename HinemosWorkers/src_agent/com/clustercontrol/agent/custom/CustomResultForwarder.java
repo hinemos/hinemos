@@ -144,7 +144,7 @@ public class CustomResultForwarder {
 	}
 	
 	public void add(AgtCustomResultDTORequest result) {
-		transporter.add(result);
+		transporter.addIfSpace(result);
 	}
 
 	private static class CustomResultProcessor implements TransportProcessor<AgtCustomResultDTORequest> {

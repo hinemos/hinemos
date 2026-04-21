@@ -117,6 +117,9 @@ public class JobLinkMessageId {
 		} else if (notifyTriggerType == NotifyTriggerType.JOB_EXCEEDED_MULTIPLICITY) {
 			return String.format("%s_%s:%s", HinemosModuleConstant.JOB_EXCEEDED_MULTIPLICITY, jobunitId, jobId);
 
+		} else if (notifyTriggerType == NotifyTriggerType.JOB_COMMAND_OUTPUT_FAILED) {
+			return String.format("%s_%s:%s", HinemosModuleConstant.JOB_COMMAND_OUTPUT_FAILED, jobunitId, jobId);
+
 		} else {
 			return null;
 		}

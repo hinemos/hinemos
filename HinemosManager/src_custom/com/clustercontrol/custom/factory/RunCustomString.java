@@ -233,6 +233,26 @@ public class RunCustomString extends RunCustomBase {
 									+ e.getMessage(), e);
 						}
 					}
+					if (isMonitorJob
+						&& HinemosPropertyCommon.job_monitor_$_evaluate_once
+								.getBooleanValue(HinemosModuleConstant.MONITOR_CUSTOM_S)
+						&& this.monitorJobEndNodeList.isEmpty()) {
+						msgOrig = "\n"
+								+ "COMMAND : " + result.getCommand() + "\n"
+								+ "COLLECTION DATE : " + collectDate + "\n"
+								+ "executed at " + executeDate + "\n"
+								+ "exited (or timeout) at " + exitDate + "\n"
+								+ "EXIT CODE : " + (result.getExitCode() != null ? result.getExitCode() : "timeout") + "\n\n"
+								+ "[STDOUT]\n" + result.getStdout() + "\n"
+								+ "[STDERR]\n" + result.getStderr() + "\n";
+						this.monitorJobEndNodeList.add(new MonitorJobEndNode(
+								result.getRunInstructionInfo(), 
+								HinemosModuleConstant.MONITOR_CUSTOM_S,
+								makeJobOrgMessage(monitor, msgOrig),
+								"",
+								RunStatusConstant.END,
+								MonitorJobWorker.getReturnValue(result.getRunInstructionInfo(), PriorityConstant.TYPE_UNKNOWN)));
+					}
 				}
 			}
 			// 通知情報を返す

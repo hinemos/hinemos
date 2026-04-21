@@ -8,8 +8,6 @@
 
 package com.clustercontrol.reporting.factory;
 
-import java.util.Date;
-
 import jakarta.persistence.EntityExistsException;
 
 import org.apache.commons.logging.Log;
@@ -26,6 +24,7 @@ import com.clustercontrol.reporting.model.TemplateSetDetailInfoEntity;
 import com.clustercontrol.reporting.model.TemplateSetDetailInfoEntityPK;
 import com.clustercontrol.reporting.model.TemplateSetInfoEntity;
 import com.clustercontrol.reporting.util.QueryUtil;
+import com.clustercontrol.util.HinemosTime;
 import com.clustercontrol.reporting.factory.SelectTemplateSetInfo;
 
 /**
@@ -58,8 +57,8 @@ public class AddTemplateSet {
 			entity.setTemplateSetName(data.getTemplateSetName());
 			entity.setDescription(data.getDescription());
 			entity.setOwnerRoleId(data.getOwnerRoleId());
-			entity.setRegDate(new Date().getTime());
-			entity.setUpdateDate(new Date().getTime());
+			entity.setRegDate(HinemosTime.currentTimeMillis());
+			entity.setUpdateDate(HinemosTime.currentTimeMillis());
 			entity.setRegUser(name);
 			entity.setUpdateUser(name);
 			em.persist(entity);

@@ -215,7 +215,9 @@ public class NotifyDispatcher {
 						prioityChangeFlag,
 						notify_mode,
 						acrossCountMap.get(info),
-						notifyHistoryEntityMap);
+						notifyHistoryEntityMap,
+						isPriorityChange(info.getPriorityChangeJudgmentType()),
+						isPriorityChangeFail(info.getPriorityChangeFailureType()));
 
 				if(!isNotify){
 					continue;
@@ -308,6 +310,8 @@ public class NotifyDispatcher {
 	 * @param mode 抑制モード（VERBOSE:重要度が変化した場合は出力する, NORMAL:重要度が変化しても前回通知の重要度と同じ場合は通知しない）
 	 * @param acrossCounter サブキー横断での同一重要度カウント合計件数（判定を跨いだ重要度変化 有効時のみ設定）
 	 * @param notifyHistoryEntityMap
+	 * @param isPriorityChangeJudgeAcross 判定を跨いだ重要度変化の対象であるフラグ(true/false)
+	 * @param isPriorityChangeFailOuccer 監視対象値が取得失敗時の「不明」を重要度変化として扱うフラグ(true/false)
 	 * @return 通知する場合は true
 	 */
 	private static boolean notifyCheck(
@@ -321,7 +325,9 @@ public class NotifyDispatcher {
 			boolean priorityChangeFlag,
 			String mode,
 			Long acrossCounter,
-			Map<NotifyHistoryEntityPK, NotifyHistoryEntity> notifyHistoryEntityMap) {
+			Map<NotifyHistoryEntityPK, NotifyHistoryEntity> notifyHistoryEntityMap,
+			boolean isPriorityChangeJudgeAcross,
+			boolean isPriorityChangeFailOuccer) {
 
 		if(m_log.isDebugEnabled()){
 			m_log.debug("notifyCheck() " +
@@ -333,7 +339,9 @@ public class NotifyDispatcher {
 					", priority=" + priority +
 					", outputDate=" + outputDate +
 					", priorityChangeFlag=" + priorityChangeFlag +
-					", mode="+ mode);
+					", mode="+ mode +
+					", isPriorityChangeJudgeAcross="+ isPriorityChangeJudgeAcross +
+					", isPriorityChangeFailOuccer="+ isPriorityChangeFailOuccer);
 		}
 
 		try (JpaTransactionManager jtm = new JpaTransactionManager()) {
@@ -554,8 +562,31 @@ public class NotifyDispatcher {
 						notifyHistoryEntityMap.put(entityPk, newHistoryEntity);
 
 						if(notifyInfo.getNotFirstNotify().booleanValue()){
-							// [有効にした直後は通知しない]がオンの場合
-							return false;
+							// [有効にした直後は通知しない]がオンの場合 通知を抑止する
+							// ただし、[判定をまたいで重要度変化する , 取得失敗通知は重要度変化扱い]のどちらかが有効で
+							// 他サブキーの直近通知履歴が「有り」なら厳密には初回でないので抑止しない
+							boolean doDeterrence = true;
+							boolean existHistry = false;
+							if (isPriorityChangeJudgeAcross || isPriorityChangeFailOuccer) {
+								existHistry = existNotifyHistoryByAcrossSubkeyWithoutOwn(entityPk,
+										notifyHistoryEntityMap);
+								if (existHistry) {
+									if (m_log.isDebugEnabled()) {
+										m_log.debug("notifyCheck() : Notifications are not suppressed. (NotFirstNotify)." + pkStr
+												+ " JudgeAcross=" + isPriorityChangeJudgeAcross + ", FailOuccer="
+												+ isPriorityChangeFailOuccer + ",existHistry=" + existHistry);
+									}
+									doDeterrence = false;
+								}
+							}
+							if (doDeterrence) {
+								if (m_log.isDebugEnabled()) {
+									m_log.debug("notifyCheck() : Notifications are suppressed. (NotFirstNotify)." + pkStr
+											+ " JudgeAcross=" + isPriorityChangeJudgeAcross + ", FailOuccer="
+											+ isPriorityChangeFailOuccer + ",existHistry=" + existHistry);
+								}
+								return false;
+							}
 						}
 						return isNotifyPriority;
 					}
@@ -661,6 +692,31 @@ public class NotifyDispatcher {
 			throw new NotifyNotFound();
 		}
 		return entity;
+	}
+
+	/**
+	 * 指定された通知履歴PKに基づいて、通知履歴一覧内で他のサブキーによる通知履歴が存在するかどうかを判定します。
+	 * @param pk 通知履歴PK
+	 * @param notifyHistoryEntityMap 通知履歴一覧（通知処理開始時点の一覧+通知対象を想定）
+	 * @return 他のサブキーによる通知履歴が存在する場合はtrue、存在しない場合はfalse
+	 */
+	private static boolean existNotifyHistoryByAcrossSubkeyWithoutOwn(NotifyHistoryEntityPK pk,
+			Map<NotifyHistoryEntityPK, NotifyHistoryEntity> notifyHistoryEntityMap) {
+		if (pk == null || notifyHistoryEntityMap == null) {
+			//パラメータに問題がある場合、チェックが正常にできないので「存在しない」扱いとする(通常はこのルートには来ない想定)
+			m_log.warn("existNotifyHistoryByAcrossSubkeyWithoutOwn() : parameter is null");
+			return false;
+		}
+		if (m_log.isDebugEnabled()) {
+			m_log.debug("existNotifyHistoryByAcrossSubkeyWithoutOwn() : NotifyHistoryEntityPK=" + pk.toString());
+		}
+		return notifyHistoryEntityMap.values().stream()
+				.anyMatch(notifyHistoryEntity -> notifyHistoryEntity.getId().getFacilityId().equals(pk.getFacilityId())
+						&& notifyHistoryEntity.getId().getPluginId().equals(pk.getPluginId())
+						&& notifyHistoryEntity.getId().getMonitorId().equals(pk.getMonitorId())
+						&& notifyHistoryEntity.getId().getNotifyId().equals(pk.getNotifyId())
+						&& notifyHistoryEntity.getId().getSubKey() != null
+						&& !notifyHistoryEntity.getId().getSubKey().equals(pk.getSubKey()));
 	}
 
 	/**

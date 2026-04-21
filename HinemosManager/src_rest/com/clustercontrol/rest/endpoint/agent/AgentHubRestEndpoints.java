@@ -16,6 +16,7 @@ import static com.clustercontrol.rest.RestConstant.STATUS_CODE_404;
 import static com.clustercontrol.rest.RestConstant.STATUS_CODE_500;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -114,6 +115,9 @@ public class AgentHubRestEndpoints {
 			convertCommandResultDTO(src, dst);
 			resultList.add(dst);
 		}
+
+		// ---- デッドロック回避のためソートする
+		resultList.sort(Comparator.comparing(CommandResultDTO::getMonitorId));
 
 		// ---- 主処理
 		try {

@@ -453,6 +453,7 @@ public class CloudRestEndpoints {
 			}
 			Boolean isPublic = isPublic(dtoReq.getPlatformId());
 			dtoReq.getAccount().setPublic(isPublic);
+			dtoReq.correlationCheck();
 
 			CloudManager.singleton().optionExecute(dtoReq.getPlatformId(), new CloudManager.OptionExecutor() {
 				@Override

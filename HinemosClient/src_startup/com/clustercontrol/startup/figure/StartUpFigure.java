@@ -215,6 +215,8 @@ public class StartUpFigure extends Figure {
 
 		tooltip.add(new Label(startUpItem.getToolTipText()));
 
+		// レイアウトを再計算し適切なサイズで表示されるようにする
+		tooltip.validate();
 		return tooltip;
 	}
 

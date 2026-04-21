@@ -1004,37 +1004,37 @@ public interface IResourceManagement {
 
 	Location getResourceHierarchy() throws CloudManagerException;
 
-	public Instance addInstance(AddInstanceRequest request) throws CloudManagerException;
-	void removeInstances(List<String> instanceIds) throws CloudManagerException;
-	List<Instance> getInstances(List<String> instanceIds) throws CloudManagerException;
-	Instance modifyInstance(ModifyInstanceRequest request) throws CloudManagerException;
-	void powerOnInstances(List<String> instanceIds) throws CloudManagerException;
-	void powerOffInstances(List<String> instanceIds) throws CloudManagerException;
-	void suspendInstances(List<String> instanceIds) throws CloudManagerException;
-	void rebootInstances(List<String> instanceIds) throws CloudManagerException;
+	default Instance addInstance(AddInstanceRequest request) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default void removeInstances(List<String> instanceIds) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default List<Instance> getInstances(List<String> instanceIds) throws CloudManagerException {return Collections.emptyList();}
+	default Instance modifyInstance(ModifyInstanceRequest request) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default void powerOnInstances(List<String> instanceIds) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default void powerOffInstances(List<String> instanceIds) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default void suspendInstances(List<String> instanceIds) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default void rebootInstances(List<String> instanceIds) throws CloudManagerException {throw new UnsupportedOperationException();}
 
 	// インスタンスバックアップ
-	InstanceSnapshot takeInstanceSnapshot(String instanceId, String name, String description, BackupedDataStore backup, List<Option> options) throws CloudManagerException;
-	void deleteInstanceSnapshots(List<InstanceBackupEntryEntity> entries) throws CloudManagerException;
-	List<InstanceSnapshot> getInstanceSnapshots(List<InstanceBackupEntryEntity> entries) throws CloudManagerException;
-	Instance cloneBackupedInstance(InstanceBackupEntryEntity entry, Map<String, String> backupedData, List<Option> options) throws CloudManagerException;
+	default InstanceSnapshot takeInstanceSnapshot(String instanceId, String name, String description, BackupedDataStore backup, List<Option> options) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default void deleteInstanceSnapshots(List<InstanceBackupEntryEntity> entries) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default List<InstanceSnapshot> getInstanceSnapshots(List<InstanceBackupEntryEntity> entries) throws CloudManagerException {return Collections.emptyList();}
+	default Instance cloneBackupedInstance(InstanceBackupEntryEntity entry, Map<String, String> backupedData, List<Option> options) throws CloudManagerException {throw new UnsupportedOperationException();}
 
 	// ストレージ関連
-	Storage addStorage(AddStorageRequest request) throws CloudManagerException;
-	void attachStorage(String instanceId, String storageId, List<Option> options) throws CloudManagerException;
-	void detachStorage(String instanceId, String storageId) throws CloudManagerException;
-	void removeStorages(List<String> storageIds) throws CloudManagerException;
-	List<Storage> getStorages(List<String> storageIds) throws CloudManagerException;
+	default Storage addStorage(AddStorageRequest request) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default void attachStorage(String instanceId, String storageId, List<Option> options) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default void detachStorage(String instanceId, String storageId) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default void removeStorages(List<String> storageIds) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default List<Storage> getStorages(List<String> storageIds) throws CloudManagerException {return Collections.emptyList();}
 
 	// ストレージバックアップ
-	StorageSnapshot takeStorageSnapshot(String storageId, String name, String description, BackupedDataStore backup, List<Option> options) throws CloudManagerException;
-	void deleteStorageSnapshots(List<StorageBackupEntryEntity> entries) throws CloudManagerException;
-	List<StorageSnapshot> getStorageSnapshots(List<StorageBackupEntryEntity> entries) throws CloudManagerException;
-	Storage cloneBackupedStorage(StorageBackupEntryEntity entry, Map<String, String> backupedData, List<Option> options) throws CloudManagerException;
+	default StorageSnapshot takeStorageSnapshot(String storageId, String name, String description, BackupedDataStore backup, List<Option> options) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default void deleteStorageSnapshots(List<StorageBackupEntryEntity> entries) throws CloudManagerException {throw new UnsupportedOperationException();}
+	default List<StorageSnapshot> getStorageSnapshots(List<StorageBackupEntryEntity> entries) throws CloudManagerException {return Collections.emptyList();}
+	default Storage cloneBackupedStorage(StorageBackupEntryEntity entry, Map<String, String> backupedData, List<Option> options) throws CloudManagerException {throw new UnsupportedOperationException();}
 	
-	List<Network> getNetworks() throws CloudManagerException;
+	default List<Network> getNetworks() throws CloudManagerException {return Collections.emptyList();}
 	
 	//クラウド通知(AWS,Azureのみ)
-	void execNotify(ConcurrentHashMap<String, Object> requestMap) throws CloudManagerException;
+	default void execNotify(ConcurrentHashMap<String, Object> requestMap) throws CloudManagerException {throw new UnsupportedOperationException();}
 
 }

@@ -1122,6 +1122,9 @@ public class JobMultiplicityCache {
 						}
 					}
 					jtm.commit();
+				} catch (JobInfoNotFound | InvalidRole e) {
+					m_log.warn("RunningQueue refresh : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
+					jtm.rollback();
 				} catch (Exception e) {
 					m_log.warn("RunningQueue refresh : " + e.getClass().getSimpleName() + ", " + e.getMessage(), e);
 					jtm.rollback();

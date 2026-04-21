@@ -13,6 +13,7 @@ import java.util.List;
 import com.clustercontrol.fault.InvalidRole;
 import com.clustercontrol.rest.endpoint.cloud.CloudRestEndpoints;
 import com.clustercontrol.rest.endpoint.cloud.dto.AddCloudLoginUserRequest;
+import com.clustercontrol.rest.endpoint.cloud.dto.PrivateLocationRequest;
 import com.clustercontrol.rest.endpoint.utility.dto.ImportCloudScopeRecordRequest;
 import com.clustercontrol.rest.endpoint.utility.dto.RecordRegistrationResponse;
 import com.clustercontrol.rest.endpoint.utility.dto.enumtype.ImportResultEnum;
@@ -24,6 +25,7 @@ import com.clustercontrol.xcloud.bean.AddCloudScopeRequest.ITransformer;
 import com.clustercontrol.xcloud.bean.AddPrivateCloudScopeRequest;
 import com.clustercontrol.xcloud.bean.AddPublicCloudScopeRequest;
 import com.clustercontrol.xcloud.bean.CloudScope;
+import com.clustercontrol.xcloud.bean.ModifyCloudLoginUserRequest;
 import com.clustercontrol.xcloud.bean.ModifyPrivateCloudScopeRequest;
 import com.clustercontrol.xcloud.bean.ModifyPublicCloudScopeRequest;
 import com.clustercontrol.xcloud.bean.PrivateCloudScope;
@@ -52,9 +54,9 @@ public class ImportCloudScopeController extends AbstractImportControllerForCloud
 		dtoRecRes.setImportKeyValue(importRec.getImportKeyValue());
 
 		RestCommonValitater.checkRequestDto(importRec.getImportData());
-		importRec.getImportData().correlationCheck();
 		Boolean isPublic = CloudRestEndpoints.isPublic(importRec.getImportData().getPlatformId());
 		importRec.getImportData().getAccount().setPublic(isPublic);
+		importRec.getImportData().correlationCheck();
 
 		// メインアカウントのチェック
 		CloudManager.singleton().optionExecute(importRec.getImportData().getPlatformId(), new CloudManager.OptionExecutor() {
@@ -77,10 +79,14 @@ public class ImportCloudScopeController extends AbstractImportControllerForCloud
 					option.visit(new ICloudOption.IVisitor() {
 						@Override
 						public void visit(IPrivateCloudOption cloudOption) throws CloudManagerException {
-							List<PrivateLocation> location = new ArrayList<>();
+							List<PrivateLocation> locations = new ArrayList<>();
 							try {
-								RestBeanUtil.convertBean(importRec.getImportData().getPrivateLocations(), location);
-								cloudOption.validCredentialAsAccount(importRec.getImportData().getAccount().getCredential(), location);
+								for (PrivateLocationRequest locReq : importRec.getImportData().getPrivateLocations()) {
+									PrivateLocation location = new PrivateLocation();
+									RestBeanUtil.convertBean(locReq, location);
+									locations.add(location);
+								}
+								cloudOption.validCredentialAsAccount(importRec.getImportData().getAccount().getCredential(), locations);
 							} catch (Exception e) {
 								throw new CloudManagerException(e.getMessage());
 							}
@@ -142,7 +148,13 @@ public class ImportCloudScopeController extends AbstractImportControllerForCloud
 					return new PrivateCloudScope(scope);
 				}
 			});
-			
+
+			// メインアカウントの変更
+			com.clustercontrol.xcloud.bean.ModifyCloudLoginUserRequest userInfoReq = new ModifyCloudLoginUserRequest();
+			RestBeanUtil.convertBean(importRec.getImportData().getAccount(), userInfoReq);
+			userInfoReq.setCloudScopeId(importRec.getImportData().getCloudScopeId());
+
+			CloudManager.singleton().getLoginUsers().modifyCloudLoginUser(userInfoReq);
 		}
 
 		// クラウドスコープ登録後にサブアカウントのチェック
@@ -185,6 +197,7 @@ public class ImportCloudScopeController extends AbstractImportControllerForCloud
 
 		//課金情報
 		com.clustercontrol.xcloud.bean.ModifyBillingSettingRequest infoReq = new com.clustercontrol.xcloud.bean.ModifyBillingSettingRequest();
+		importRec.getBillingSetting().correlationCheck();
 		RestBeanUtil.convertBean(importRec.getBillingSetting(), infoReq);
 		infoReq.setCloudScopeId(importRec.getImportData().getCloudScopeId());
 		CloudManager.singleton().getCloudScopes().modifyBillingSetting(infoReq);

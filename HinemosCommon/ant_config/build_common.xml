@@ -92,6 +92,8 @@
 		<attribute name="props.version.major.short" />
 		<attribute name="props.version.tool" />
 		<attribute name="props.version.tool.short" />
+		<attribute name="props.version.excel" />
+		<attribute name="props.version.unix.package" />
 		<attribute name="props.copyright.year" />
 		<attribute name="props.cloud.clouduser.schemarevision" />
 		<attribute name="props.platform.notify.schemarevision" />
@@ -126,6 +128,10 @@
 		<attribute name="props.xcloud.gcp.manager.upgrade.code" />
 		<attribute name="props.xcloud.gcp.client.product.code" />
 		<attribute name="props.xcloud.gcp.client.upgrade.code" />
+		<attribute name="props.xcloud.kvm.manager.product.code" />
+		<attribute name="props.xcloud.kvm.manager.upgrade.code" />
+		<attribute name="props.xcloud.kvm.client.product.code" />
+		<attribute name="props.xcloud.kvm.client.upgrade.code" />
 		<attribute name="props.ha.product.code" />
 		<attribute name="props.ha.upgrade.code" />
 		
@@ -157,6 +163,8 @@
 				<replacefilter token="@VERSION_MAJOR_SHORT@" value="@{props.version.major.short}" />
 				<replacefilter token="@VERSION_TOOL@" value="@{props.version.tool}" />
 				<replacefilter token="@VERSION_TOOL_SHORT@" value="@{props.version.tool.short}" />
+				<replacefilter token="@VERSION_EXCEL@" value="@{props.version.excel}" />
+				<replacefilter token="@VERSION_UNIX_PACKAGE@" value="@{props.version.unix.package}" />
 				<replacefilter token="@COPYRIGHT_YEAR@" value="@{props.copyright.year}" />
 				<replacefilter token="@CLOUD.CLOUDUSER.SCHEMAREVISION@" value="@{props.cloud.clouduser.schemarevision}" />
 				<replacefilter token="@PLATFORM.NOTIFY.SCHEMAREVISION@" value="@{props.platform.notify.schemarevision}" />
@@ -191,6 +199,10 @@
 				<replacefilter token="@XCLOUD_GCP_MANAGER_UPGRADE_CODE@" value="@{props.xcloud.gcp.manager.upgrade.code}" />
 				<replacefilter token="@XCLOUD_GCP_CLIENT_PRODUCT_CODE@" value="@{props.xcloud.gcp.client.product.code}" />
 				<replacefilter token="@XCLOUD_GCP_CLIENT_UPGRADE_CODE@" value="@{props.xcloud.gcp.client.upgrade.code}" />
+				<replacefilter token="@XCLOUD_KVM_MANAGER_PRODUCT_CODE@" value="@{props.xcloud.kvm.manager.product.code}" />
+				<replacefilter token="@XCLOUD_KVM_MANAGER_UPGRADE_CODE@" value="@{props.xcloud.kvm.manager.upgrade.code}" />
+				<replacefilter token="@XCLOUD_KVM_CLIENT_PRODUCT_CODE@" value="@{props.xcloud.kvm.client.product.code}" />
+				<replacefilter token="@XCLOUD_KVM_CLIENT_UPGRADE_CODE@" value="@{props.xcloud.kvm.client.upgrade.code}" />
 				
 				<replacefilter token="@HA_PRODUCT_CODE@" value="@{props.ha.product.code}" />
 				<replacefilter token="@HA_UPGRADE_CODE@" value="@{props.ha.upgrade.code}" />
@@ -208,8 +220,9 @@
 	</macrodef>
 	
 	<target name="version_properties_7.0">
-		<version_properties props.version="7.0.3" props.version.short="703" props.version.major="7.0" props.version.major.short="70"
-			props.version.tool="7.0.d" props.version.tool.short="70d" props.required.version="7.0.0"
+		<version_properties props.version="7.0.4" props.version.short="704" props.version.major="7.0" props.version.major.short="70"
+			props.version.tool="7.0.e" props.version.excel="7.0.e" props.version.tool.short="70e" props.required.version="7.0.0"
+			props.version.unix.package="7.0.x_20260422" 
 			props.copyright.year="2022" props.cloud.clouduser.schemarevision="2" props.platform.notify.schemarevision="3"
 			props.manager.product.code="2dad03dd-ff2a-4303-8a3c-d4f3aeae05ea" props.manager.upgrade.code="ecab0f52-c312-4d1a-a7a5-567c85419c3f"
 			props.client.web.product.code="021059b6-20c9-477b-a292-f314d66d4e1a" props.client.web.upgrade.code="848a2214-1ba5-4f18-9756-66b6b25c15da"
@@ -238,11 +251,15 @@
 			props.xcloud.gcp.manager.upgrade.code="DO NOT USE IT"
 			props.xcloud.gcp.client.product.code="DO NOT USE IT"
 			props.xcloud.gcp.client.upgrade.code="DO NOT USE IT"
+			props.xcloud.kvm.manager.product.code="DO NOT USE IT"
+			props.xcloud.kvm.manager.upgrade.code="DO NOT USE IT"
+			props.xcloud.kvm.client.product.code="DO NOT USE IT"
+			props.xcloud.kvm.client.upgrade.code="DO NOT USE IT"
 			props.ha.product.code="B58BE865-1066-426D-9D31-DAD199A42E9F" props.ha.upgrade.code="53204C45-04F2-4E6A-B2D2-53F117E61803"
-			doc.commandline.ja.name="ja_CommandLine_7.0_rev12"
+			doc.commandline.ja.name="ja_CommandLine_7.0_rev16"
 			doc.commandline.en.name="en_CommandLine_7.0_rev3"
-			doc.commandline.ja.package.name="ja_CommandLine_7.0_doc_20250205.zip"
-			doc.commandline.en.package.name="en_CommandLine_7.0_doc_20240412.zip"
+			doc.commandline.ja.package.name="ja_CommandLine_7.0_doc_20260422.zip"
+			doc.commandline.en.package.name="en_CommandLine_7.0_doc_20260422.zip"
 			doc.commandline.importexporttool.ja.package.name="ja_CommandLine_ImportExport_7.0_rev6"
 			doc.commandline.importexporttool.en.package.name="en_CommandLine_ImportExport_7.0_rev2"
 			doc.restapi.ja.name="ja_RestAPI_7.0_rev3"
@@ -251,8 +268,9 @@
 	</target>
 	
 	<target name="version_properties_7.1">
-		<version_properties props.version="7.1.1" props.version.short="711" props.version.major="7.1" props.version.major.short="71"
-			props.version.tool="7.1.b" props.version.tool.short="71b" props.required.version="7.1.0"
+		<version_properties props.version="7.1.2" props.version.short="712" props.version.major="7.1" props.version.major.short="71"
+			props.version.tool="7.1.c" props.version.excel="7.1.c" props.version.tool.short="71c" props.required.version="7.1.0"
+			props.version.unix.package="7.1.x_20260422" 
 			props.copyright.year="2024" props.cloud.clouduser.schemarevision="3" props.platform.notify.schemarevision="4"
 			props.manager.product.code="9a127484-eec8-457d-a7ea-845881ad9085" props.manager.upgrade.code="2d4e9fd0-2a09-40da-b151-5b479109ba41"
 			props.client.web.product.code="b48e63b3-b262-4ce4-98a5-816ed8938bb6" props.client.web.upgrade.code="f5c4608b-a908-4c5b-8e45-b9563ac6e59e"
@@ -281,15 +299,67 @@
 			props.xcloud.gcp.manager.upgrade.code="61b57580-e314-474c-9a10-7afa43e39a40"
 			props.xcloud.gcp.client.product.code="3332a9d4-dbef-4148-9e17-fdc7ff2d68b2"
 			props.xcloud.gcp.client.upgrade.code="794ae64f-d21c-46a9-8755-969fb18064a0"
+			props.xcloud.kvm.manager.product.code="DO NOT USE IT"
+			props.xcloud.kvm.manager.upgrade.code="DO NOT USE IT"
+			props.xcloud.kvm.client.product.code="DO NOT USE IT"
+			props.xcloud.kvm.client.upgrade.code="DO NOT USE IT"
 			props.ha.product.code="a3839a8d-8082-4b4c-8fd8-b1ac2c1b25f3" props.ha.upgrade.code="0dfad011-18f3-44d5-9ffc-84a37d4dfad8"
-			doc.commandline.ja.name="ja_CommandLine_7.1_rev4"
+			doc.commandline.ja.name="ja_CommandLine_7.1_rev8"
 			doc.commandline.en.name="en_CommandLine_7.1_rev1"
-			doc.commandline.ja.package.name="ja_CommandLine_7.1_doc_20250205.zip"
-			doc.commandline.en.package.name="en_CommandLine_7.1_doc_20240412.zip"
+			doc.commandline.ja.package.name="ja_CommandLine_7.1_doc_20260422.zip"
+			doc.commandline.en.package.name="en_CommandLine_7.1_doc_20260422.zip"
 			doc.commandline.importexporttool.ja.package.name="ja_CommandLine_ImportExport_7.1_rev2"
 			doc.commandline.importexporttool.en.package.name="en_CommandLine_ImportExport_7.1_rev1"
 			doc.restapi.ja.name="ja_RestAPI_7.1_rev2"
 			doc.restapi.en.name="en_RestAPI_7.1_rev1"
+		/>
+	</target>
+	
+	<target name="version_properties_7.2">
+		<version_properties props.version="7.2.0" props.version.short="720" props.version.major="7.2" props.version.major.short="72"
+			props.version.tool="7.2.a" props.version.excel="7.2.a" props.version.tool.short="72a" props.required.version="7.2.0"
+			props.version.unix.package="7.2.x_20260422" 
+			props.copyright.year="2026" props.cloud.clouduser.schemarevision="3" props.platform.notify.schemarevision="4"
+			props.manager.product.code="fc020e33-50b7-409a-8fe7-d2b07e83f933" props.manager.upgrade.code="60c93e63-c1a0-4bc5-9b5f-ba30b1271115"
+			props.client.web.product.code="cb9a21d3-c45c-4aa4-8b3c-5b0f578c09fa" props.client.web.upgrade.code="620c0f85-ed09-46f2-8954-62df80ebfd9a"
+			props.agent.product.code="686136b5-6727-4c31-9ae9-512e0582f186"
+			props.xcloud.aws.manager.product.code="a0a8f6e0-5621-47f5-80dd-44929e8ca006"
+			props.xcloud.aws.manager.upgrade.code="9d8ace7f-7a3b-46fe-a09d-0e613c5b763b"
+			props.xcloud.aws.client.product.code="a652e792-fc68-4f5d-be22-456bd48ec082"
+			props.xcloud.aws.client.upgrade.code="873de47c-34ea-4656-bf4c-f7ef5355d057"
+			props.xcloud.azure.manager.product.code="43b5fe1a-6f1b-4d23-a7c9-0996ce1e4d40"
+			props.xcloud.azure.manager.upgrade.code="8605c1c9-e517-4412-9614-b0d4c6b094c8"
+			props.xcloud.azure.client.product.code="94d08a5a-7493-45bd-9223-d3390673f8b6"
+			props.xcloud.azure.client.upgrade.code="2288d6de-4a83-44e3-9f17-a168a820c7f8"
+			props.xcloud.hyperv.manager.product.code="4e287c18-e7c2-404b-90c5-e6079b577a85"
+			props.xcloud.hyperv.manager.upgrade.code="27a3d218-49c5-4534-95de-b6bc333a13dd"
+			props.xcloud.hyperv.client.product.code="9e679c6e-b089-4ec5-875e-2a81c18219c9"
+			props.xcloud.hyperv.client.upgrade.code="33ff2df6-834e-4e70-95a4-7f89d8c68ee5"
+			props.xcloud.vmware.manager.product.code="667855ff-27e6-48b1-9b24-3d5175cef1a5"
+			props.xcloud.vmware.manager.upgrade.code="1c5325ce-8213-4e1f-a158-589d73297750"
+			props.xcloud.vmware.client.product.code="fdcda2a6-8ec3-4b73-b00a-7e1ce65b9ff8"
+			props.xcloud.vmware.client.upgrade.code="c865505b-8fb2-4ba1-879f-7a0ba2f0b89f"
+			props.xcloud.oci.manager.product.code="6bee1dea-acda-4c7a-b081-0fc5e63601b4"
+			props.xcloud.oci.manager.upgrade.code="1b35ba76-4939-46eb-94fa-f9de2c130546"
+			props.xcloud.oci.client.product.code="edd82c42-09c8-43a0-81f3-65460615ee35"
+			props.xcloud.oci.client.upgrade.code="e50f35af-f3cd-4779-aa17-47f3e2a4ec94"
+			props.xcloud.gcp.manager.product.code="7240819f-8601-4be1-b2ee-d08eee45f7e9"
+			props.xcloud.gcp.manager.upgrade.code="fc887398-3580-4aa7-9376-e8306f4fe4f1"
+			props.xcloud.gcp.client.product.code="01b4f727-9511-4dd8-a114-8be37f06d748"
+			props.xcloud.gcp.client.upgrade.code="f1e050d9-0eeb-4889-88dd-1852fa957686"
+			props.xcloud.kvm.manager.product.code="DO NOT USE IT"
+			props.xcloud.kvm.manager.upgrade.code="DO NOT USE IT"
+			props.xcloud.kvm.client.product.code="DO NOT USE IT"
+			props.xcloud.kvm.client.upgrade.code="DO NOT USE IT"
+			props.ha.product.code="e2aef6da-b150-4756-b093-14c643d120d4" props.ha.upgrade.code="557f8fae-6dc0-4b87-9fe8-a9ddf01172a1"
+			doc.commandline.ja.name="ja_CommandLine_7.2_rev1"
+			doc.commandline.en.name="en_CommandLine_7.2_rev1"
+			doc.commandline.ja.package.name="ja_CommandLine_7.2_doc_20260422.zip"
+			doc.commandline.en.package.name="en_CommandLine_7.2_doc_20260422.zip"
+			doc.commandline.importexporttool.ja.package.name="ja_CommandLine_ImportExport_7.2_rev1"
+			doc.commandline.importexporttool.en.package.name="en_CommandLine_ImportExport_7.2_rev1"
+			doc.restapi.ja.name="ja_RestAPI_7.2_rev1"
+			doc.restapi.en.name="en_RestAPI_7.2_rev1"
 		/>
 	</target>
 	

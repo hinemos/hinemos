@@ -10,20 +10,25 @@ package com.clustercontrol.rest.endpoint.cloud.dto;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.clustercontrol.commons.util.StringUtil;
 import com.clustercontrol.fault.InvalidSetting;
 import com.clustercontrol.rest.annotation.RestItemName;
 import com.clustercontrol.rest.annotation.validation.RestValidateObject;
 import com.clustercontrol.rest.annotation.validation.RestValidateString;
 import com.clustercontrol.rest.dto.RequestDto;
 import com.clustercontrol.util.MessageConstant;
+import com.clustercontrol.xcloud.CloudManagerException;
 import com.clustercontrol.xcloud.bean.AccessKeyCredential;
 import com.clustercontrol.xcloud.bean.Credential;
 import com.clustercontrol.xcloud.bean.GenericCredential;
 import com.clustercontrol.xcloud.bean.UserCredential;
+import com.clustercontrol.xcloud.factory.CloudManager;
+import com.clustercontrol.xcloud.factory.ICloudOption;
+import com.clustercontrol.xcloud.model.CredentialBaseEntity;
 
 public class ModifyCloudLoginUserRequest implements RequestDto {
 	@RestItemName(MessageConstant.XCLOUD_CORE_CLOUDLOGINUSER_NAME)
-	@RestValidateString(notNull = true, maxLen = 256)
+	@RestValidateString(notNull = true, minLen = 1, maxLen = 256)
 	private String userName;
 	@RestItemName(MessageConstant.XCLOUD_CORE_DESCRIPTION)
 	@RestValidateString(maxLen = 256)
@@ -59,13 +64,42 @@ public class ModifyCloudLoginUserRequest implements RequestDto {
 
 	@Override
 	public void correlationCheck() throws InvalidSetting {
-		if (isPublic && platform == null) {
-			if (accessKey == null && secretKey == null) {
-				throw new InvalidSetting("set accessKey and secretKey.");
+		if (platform != null) {
+			try {
+				Class<? extends CredentialBaseEntity> credentialEntityClass = CloudManager.singleton().optionCall(platform, (ICloudOption option) -> option.getCloudSpec().getSupportedCredential());
+				switch(credentialEntityClass.getSimpleName()) {
+				case "UserCredentialEntity":
+					if (StringUtil.isNullOrEmpty(user) || password == null) {
+						throw new InvalidSetting("set user and password.");
+					}
+					break;
+				case "AccessKeyCredentialEntity":
+					if (StringUtil.isNullOrEmpty(accessKey) && secretKey == null) {
+						throw new InvalidSetting("set accessKey and secretKey.");
+					}
+					break;
+				case "GenericCredentialEntity":
+					if (StringUtil.isNullOrEmpty(jsonCredentialInfo)) {
+						throw new InvalidSetting("set JsonCredentialInfo.");
+					}
+					break;
+				default:
+					throw new InvalidSetting(String.format("Invalid credential type. type=%s", credentialEntityClass.getSimpleName()));
+				}
+			} catch (CloudManagerException e) {
+				throw new InvalidSetting(e.getMessage(), e);
 			}
 		} else {
-			if ((user == null || password == null) && platform == null) {
-				throw new InvalidSetting("set user and password.");
+			// The following is the original implementation.
+			// Since it does not account for GenericCredential used by private cloud, the above implementation was added.
+			if (isPublic) {
+				if (StringUtil.isNullOrEmpty(accessKey) && secretKey == null) {
+					throw new InvalidSetting("set accessKey and secretKey.");
+				}
+			} else {
+				if (StringUtil.isNullOrEmpty(user) || password == null) {
+					throw new InvalidSetting("set user and password.");
+				}
 			}
 		}
 	}
@@ -94,13 +128,30 @@ public class ModifyCloudLoginUserRequest implements RequestDto {
 		this.roleRelations = roleRelations;
 	}
 
-	public Credential getCredential() {
-		if (isPublic && platform == null) {
-			credential = new AccessKeyCredential(accessKey, secretKey);
-		} else if (isPublic && platform != null) {
-			credential = new GenericCredential(platform, jsonCredentialInfo);
+	public Credential getCredential() throws CloudManagerException {
+		if (platform != null) {
+			Class<? extends CredentialBaseEntity> credentialEntityClass = CloudManager.singleton().optionCall(platform, (ICloudOption option) -> option.getCloudSpec().getSupportedCredential());
+			switch(credentialEntityClass.getSimpleName()) {
+			case "UserCredentialEntity":
+				credential = new UserCredential(user, password);
+				break;
+			case "AccessKeyCredentialEntity":
+				credential = new AccessKeyCredential(accessKey, secretKey);
+				break;
+			case "GenericCredentialEntity":
+				credential = new GenericCredential(platform, jsonCredentialInfo);
+				break;
+			default:
+				throw new CloudManagerException(String.format("Invalid credential type. type=%s", credentialEntityClass.getSimpleName()));
+			}
 		} else {
-			credential = new UserCredential(user, password);
+			// The following is the original implementation.
+			// Since it does not account for GenericCredential used by private cloud, the above implementation was added.
+			if (isPublic) {
+				credential = new AccessKeyCredential(accessKey, secretKey);
+			} else {
+				credential = new UserCredential(user, password);
+			}
 		}
 		return credential;
 	}

@@ -915,10 +915,10 @@ public class PerformanceCollectMasterControllerBean {
 			jtm.begin();
 
 			for(String platformId : platformIdList) {
-			// プラットフォーム定義情報を登録
+				// プラットフォーム定義情報を削除
 				RepositoryControllerBean repositoryControllerBean = new RepositoryControllerBean();
 				repositoryControllerBean.deleteCollectorPratformMst(platformId);
-				repositoryControllerBean.deleteScope(new String[] {platformId});
+				repositoryControllerBean.deleteScope(new String[] {platformId}, true);
 			}
 
 			jtm.commit();

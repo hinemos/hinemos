@@ -61,9 +61,6 @@ public class SetFixedModeAction extends AbstractHandler implements IElementUpdat
 		view.setMode(NodeMapView.Mode.FIXED_MODE);
 		view.setFocus();
 		
-		
-		view.setEnabled(false);
-	
 		return null;
 	}
 	

@@ -65,6 +65,7 @@ import com.clustercontrol.notify.util.NotifyRelationCache;
 import com.clustercontrol.performance.bean.CollectedDataErrorTypeConstant;
 import com.clustercontrol.repository.bean.FacilityTreeAttributeConstant;
 import com.clustercontrol.repository.session.RepositoryControllerBean;
+import com.clustercontrol.customtrap.service.TrapProcCounter;
 import com.clustercontrol.util.XMLUtil;
 import com.clustercontrol.util.apllog.AplLogger;
 
@@ -81,8 +82,8 @@ public class ReceivedCustomTrapFilter {
 
 	CustomTraps receivedCustomTraps;
 	private CustomTrapNotifier notifier;
-	private long notifiedCount = 0;
 	private int resentDataMapMaxSize = 0;
+	private TrapProcCounter counter ;
 
 	/**
 	 * コンストラクタ
@@ -90,11 +91,13 @@ public class ReceivedCustomTrapFilter {
 	 * @param receivedCustomTraps	受信データ
 	 * @param notifier				CustomTrapNotifier
 	 * @param defaultCharset		キャラクタセット
+	 * @param counter				サマリデータ用のカウンター
 	 */
 	public ReceivedCustomTrapFilter(CustomTraps receivedCustomTraps, CustomTrapNotifier notifier,
-			Charset defaultCharset) {
+			Charset defaultCharset, TrapProcCounter counter) {
 		this.receivedCustomTraps = receivedCustomTraps;
 		this.notifier = notifier;
+		this.counter = counter;
 		resentDataMapMaxSize = HinemosPropertyCommon.monitor_Customtrap_RecentData_Map_size.getIntegerValue();
 		if (logger.isDebugEnabled()) {
 			logger.debug("monitor.Customtrap.RecentData.Map.initialCapacity=" + resentDataMapMaxSize);
@@ -340,14 +343,14 @@ public class ReceivedCustomTrapFilter {
 											MonitorRunResultInfo collectResult = collectMonitorDataInfo.getChangeMonitorRunResultInfo();
 											customtrapListBuffer.add(receivedCustomTrap);
 											collectResultBuffer.add(collectResult);
-											countupNotified();
+											counter.countupNotified();
 										}
 										if (collectMonitorDataInfo.getPredictionMonitorRunResultInfo() != null) {
 											// 将来予測監視の通知
 											MonitorRunResultInfo collectResult = collectMonitorDataInfo.getPredictionMonitorRunResultInfo();
 											customtrapListBuffer.add(receivedCustomTrap);
 											collectResultBuffer.add(collectResult);
-											countupNotified();
+											counter.countupNotified();
 										}
 										average = collectMonitorDataInfo.getAverage();
 										standardDeviation = collectMonitorDataInfo.getStandardDeviation();
@@ -448,7 +451,7 @@ public class ReceivedCustomTrapFilter {
 												ruleListBuffer.add(rule);
 												priorityBuffer.add(rule.getPriority());
 												facilityIdListBuffer.add(facilityIdElement);
-												countupNotified();
+												counter.countupNotified();
 											}
 										} else {
 											if (logger.isDebugEnabled()) {
@@ -495,7 +498,7 @@ public class ReceivedCustomTrapFilter {
 								int priority = judgePriority(valueMap.get(facilityIdElement), thresholds, receivedCustomTrap);
 								priorityBuffer.add(priority);
 								valueBuffer.add(valueMap.get(facilityIdElement));
-								countupNotified();
+								counter.countupNotified();
 							}
 							if (logger.isDebugEnabled()) {
 								logger.debug("work() : CustomTrap Notify ValueType.num " + customtrapListBuffer.size()
@@ -656,7 +659,7 @@ public class ReceivedCustomTrapFilter {
 										ruleListBuffer.add(rule);
 										priorityBuffer.add(rule.getPriority());
 										facilityIdListBuffer.add(entry.getKey().getFacilityId());
-										countupNotified();
+										counter.countupNotified();
 									} else {
 										if (logger.isDebugEnabled()) {
 											logger.debug(String.format(
@@ -693,6 +696,7 @@ public class ReceivedCustomTrapFilter {
 						int priority = judgePriority(value, thresholds, receivedCustomTrap);
 						customtrapListBuffer.add(receivedCustomTrap);
 						facilityIdListBuffer.add(entry.getKey().getFacilityId());
+						counter.countupNotified();
 						priorityBuffer.add(priority);
 						valueBuffer.add(value);
 
@@ -871,16 +875,4 @@ public class ReceivedCustomTrapFilter {
 		return notInCalendar;
 	}
 
-	private synchronized void countupNotified() {
-		notifiedCount = notifiedCount >= Long.MAX_VALUE ? 0 : notifiedCount + 1;
-		int _statsInterval = HinemosPropertyCommon.monitor_customtrap_stats_interval.getIntegerValue();
-		if (logger.isDebugEnabled()) {
-			logger.debug("monitor.customtrap.stats.interval = " + _statsInterval);
-		}
-		if (notifiedCount % _statsInterval == 0) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("The number of CustomTrap (notified) : " + notifiedCount);
-			}
-		}
-	}
 }

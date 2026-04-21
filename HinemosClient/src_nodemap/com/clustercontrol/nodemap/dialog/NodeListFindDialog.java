@@ -492,7 +492,7 @@ public class NodeListFindDialog extends CommonDialog {
 		// 構成情報Not Exists条件ラジオ（Radio）
 		Button nodeConfigNotExistsRadio = new Button(existConditionComposite, SWT.RADIO);
 		nodeConfigNotExistsRadio.setText(Messages.getString("node.config.exits.condition.notexists"));
-		nodeConfigNotExistsRadio.setLayoutData(new GridData(70, SizeConstant.SIZE_BUTTON_HEIGHT));
+		nodeConfigNotExistsRadio.setLayoutData(new GridData(80, SizeConstant.SIZE_BUTTON_HEIGHT));
 		if (filterInfo.getExists() != null) {
 			nodeConfigNotExistsRadio.setSelection(!filterInfo.getExists());
 		}

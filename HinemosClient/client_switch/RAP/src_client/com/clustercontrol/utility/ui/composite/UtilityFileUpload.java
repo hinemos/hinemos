@@ -12,12 +12,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.rap.addons.fileupload.FileDetails;
 import org.eclipse.rap.addons.fileupload.FileUploadEvent;
-import org.eclipse.rap.addons.fileupload.FileUploadHandler;
 import org.eclipse.rap.addons.fileupload.FileUploadListener;
 import org.eclipse.rap.rwt.service.ServerPushSession;
 import org.eclipse.rap.rwt.widgets.FileUpload;
 import org.eclipse.swt.widgets.Composite;
 
+import com.clustercontrol.util.FileUploadHandlerWrapper;
 import com.clustercontrol.utility.ui.settings.composite.UtilityFileUploadReceiver;
 
 public class UtilityFileUpload extends FileUpload {
@@ -29,6 +29,7 @@ public class UtilityFileUpload extends FileUpload {
 		url = startUploadReceiver();
 	}
 
+	private FileUploadHandlerWrapper uploadHandler;
 	private UtilityFileUploadReceiver receiver;
 	private ServerPushSession pushSession;
 	private String url;
@@ -36,7 +37,7 @@ public class UtilityFileUpload extends FileUpload {
 	private String startUploadReceiver() {
 		receiver = new UtilityFileUploadReceiver();
 		pushSession = new ServerPushSession();
-		FileUploadHandler uploadHandler = new FileUploadHandler(receiver);
+		uploadHandler = new FileUploadHandlerWrapper(receiver);
 		uploadHandler.addUploadListener(new FileUploadListener() {
 			@Override
 			public void uploadProgress(FileUploadEvent event){
@@ -138,5 +139,13 @@ public class UtilityFileUpload extends FileUpload {
 	
 	public void submit(){
 		submit(url);
+	}
+	
+	@Override
+	public void dispose() {
+		if (uploadHandler != null) {
+			uploadHandler.dispose();
+		}
+		super.dispose();
 	}
 }

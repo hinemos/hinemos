@@ -8,6 +8,8 @@
 
 package com.clustercontrol.utility.difference;
 
+import java.util.Objects;
+
 /**
  * プロパティ値へのアクセサークラス。
  * 
@@ -47,7 +49,7 @@ public class PropValueImpl implements PropValue {
 		}
 		if (anObject instanceof PropValueImpl) {
 			PropValueImpl value = (PropValueImpl)anObject;
-			return real.equals(value.real) && (translated == null ? translated == value.translated: translated.equals(value.translated));
+			return real.equals(value.real) && Objects.equals(translated, value.translated);
 		}
 		return false;
 	}

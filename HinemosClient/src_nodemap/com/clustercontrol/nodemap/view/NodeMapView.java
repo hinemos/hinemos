@@ -578,10 +578,6 @@ public class NodeMapView extends AutoUpdateView {
 		return this.m_controller;
 	}
 
-	public void setEnabled(boolean enable) {
-		m_canvasComposite.setEnabled(enable);
-	}
-	
 	public void refreshHistoryCombobox() throws InvalidUserPass, RestConnectFailed, HinemosUnknown{
 		// 履歴のスコープの存在チェックを行い未存在の場合は削除
 		for(String item : m_ccombo.getItems()){

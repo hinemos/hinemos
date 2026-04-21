@@ -269,13 +269,13 @@ public class MonitorTypeDialog extends CommonDialog {
 					pluginName = Messages.getString("integration.monitor");
 				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_RPA_LOGFILE)) {
 					// RPAログファイル監視はエンタープライズ機能が有効な場合のみ表示する。
-					if (!activeOptions.contains(OptionUtil.TYPE_ENTERPRISE)) {
+					if (!activeOptions.contains(OptionUtil.TYPE_ENTERPRISE) || activeOptions.contains(OptionUtil.TYPE_NORPA)) {
 						continue;
 					}
 					pluginName = Messages.getString("rpa.monitor");
 				} else if (pluginId.equals(HinemosModuleConstant.MONITOR_RPA_MGMT_TOOL_SERVICE)) {
 					// RPA管理ツール監視はエンタープライズ機能が有効な場合のみ表示する。
-					if (!activeOptions.contains(OptionUtil.TYPE_ENTERPRISE)) {
+					if (!activeOptions.contains(OptionUtil.TYPE_ENTERPRISE) || activeOptions.contains(OptionUtil.TYPE_NORPA)) {
 						continue;
 					}
 					pluginName = Messages.getString("rpa.service.monitor");

@@ -8,6 +8,7 @@
 
 package com.clustercontrol.notify.message.util;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -127,6 +128,7 @@ public class SendMessageExecutor {
 		SendMessageHttpClient.SendMessageClientBuilder builder = createRequest();
 
 		boolean result = false;
+		boolean isClientFatalError = false;
 		String internalMessage = null;
 		int retryCount = 0;
 		int maxRetry = HinemosPropertyCommon.notify_message_webapi_retry_count.getIntegerValue();
@@ -139,7 +141,7 @@ public class SendMessageExecutor {
 		}
 
 		// 試行回数(maxRetry)分まで、API成功するまで実行する
-		while (retryCount < maxRetry && !result) {
+		while (retryCount < maxRetry && !result && !isClientFatalError) {
 			retryCount++;
 			if (retryCount > 1) {
 				Thread.sleep(retryInterval);
@@ -148,11 +150,21 @@ public class SendMessageExecutor {
 			// 1回の試行の中で、フィルタマネージャの認証に失敗した場合、トークンを切り替えていく
 			for (int tokenIndex = 0; tokenIndex < bearerTokenList.size(); tokenIndex++) {
 				String token = bearerTokenList.get(tokenIndex);
+				log.debug("Using token=" + token);
 				// トークンがnullまたは空の場合、スキップ
 				if (token == null || token.length() <= 0) {
 					if (log.isDebugEnabled()) {
 						log.debug("Access token is null or empty. index=" + tokenIndex);
 					}
+					// トークンリストのすべての認証に失敗し、最後がnullまたは空の場合、リトライを抜ける
+					if (bearerTokenList.size() == tokenIndex + 1) {
+						isClientFatalError = true;
+						log.debug("Reached the last index of bearerTokenList. Access token is null or empty.");
+						StringBuilder detailMsg = new StringBuilder();
+						detailMsg.append("Authentication failed for all tokens.").append("\n");
+						internalMessage = detailMsg.toString();
+					}
+					
 					continue;
 				}
 
@@ -172,17 +184,35 @@ public class SendMessageExecutor {
 						detailMsg.append("Reqeust: ").append(hinemosMessage).append("\n");
 						detailMsg.append("Response: ").append(client.getResponseBody()).append("\n");
 						internalMessage = detailMsg.toString();
+						
+						//　400,401,403エラーの場合はリトライを抜ける
+						if (client.getStatusCode() == HttpStatus.SC_BAD_REQUEST
+								|| client.getStatusCode() == HttpStatus.SC_UNAUTHORIZED
+								|| client.getStatusCode() == HttpStatus.SC_FORBIDDEN){
+							isClientFatalError = true;
+						}
 					} else {
 						TokenManager.notifySuccessToken(token);
 					}
 					break;
+				} catch (IOException e) {
+					// リトライ中にエラーが発生した場合でもthrowせずにリトライ回数分は続行させる
+					log.warn("sendMessageRequest() : httpClient.execute error. url= " + url);
+					StringBuilder detailMsg = new StringBuilder();
+					detailMsg.append("CloseableHttpClient network error url: ").append(url).append("\n");
+					detailMsg.append("Reqeust: ").append(hinemosMessage).append("\n");
+					internalMessage = detailMsg.toString();
+					result = false;
+					// トークンリストの後続は試行不要
+					break;
 				}
 			}
-
-			// 処理した結果失敗ならINTERNALイベント出力用メッセージを例外に入れてthrow
-			if (!result) {
-				throw new HinemosUnknown(internalMessage);
-			}
+			log.debug("Notification(Message) WebAPI Retry Count [" + retryCount + "/" + maxRetry + "]");
+		}
+		
+		// 処理した結果失敗ならINTERNALイベント出力用メッセージを例外に入れてthrow
+		if (!result) {
+			throw new HinemosUnknown(internalMessage);
 		}
 	}
 

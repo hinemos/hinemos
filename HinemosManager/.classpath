@@ -48,6 +48,7 @@
 	<classpathentry kind="src" path="src_platform"/>
 	<classpathentry kind="src" path="src_publish_ent"/>
 	<classpathentry kind="src" path="src_publish_oss"/>
+	<classpathentry kind="src" path="src_publish_ent2"/>
 	<classpathentry kind="lib" path="/HinemosCommon/build/jar/HinemosCommon.jar"/>
 	<classpathentry kind="lib" path="lib/sblim-cim-client-1.3.9.3.jar"/>
 	<classpathentry kind="lib" path="lib/intel-wsman-1.0.1-mod.jar"/>

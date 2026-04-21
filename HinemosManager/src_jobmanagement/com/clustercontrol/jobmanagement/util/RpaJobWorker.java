@@ -393,7 +393,7 @@ public class RpaJobWorker {
 				try {
 					// ジョブ変数があれば置換してからパースする
 					scenarioParams = parseScenarioParamJson(ParameterUtil.replaceAllSessionParameterValue(
-							runInstructionInfo.getSessionId(), runInstructionInfo.getJobId(),
+							jobInfo,
 							runInstructionInfo.getFacilityId(), jobInfo.getRpaScenarioParam()));
 					tasklog.debug("createRequestData() : scenarioParamName=" + scenarioParamName + ", scenarioParams="
 							+ scenarioParams);
@@ -439,8 +439,7 @@ public class RpaJobWorker {
 			// ジョブ変数を置換
 			Function<String, String> replaceJobParam = (source) -> {
 				try {
-					return ParameterUtil.replaceAllSessionParameterValue(runInstructionInfo.getSessionId(),
-							runInstructionInfo.getJobId(), runInstructionInfo.getFacilityId(), source);
+					return ParameterUtil.replaceAllSessionParameterValue(jobInfo, runInstructionInfo.getFacilityId(), source);
 				} catch (FacilityNotFound | InvalidRole | HinemosUnknown | JobInfoNotFound e) {
 					tasklog.warn("convertParam() : replace job param failed, " + e.getMessage(), e);
 				}
